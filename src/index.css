@@ -33,11 +33,3 @@
   .wkit-button  {
     height: 44px;
   }
-
-  .overflow-x-auto {
-    transition: transform 0.3s ease-in-out;
-  }
-  
-  .overflow-x-auto::-webkit-scrollbar {
-    display: none;
-  }

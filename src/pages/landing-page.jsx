@@ -6,6 +6,7 @@ import InboxPage from "./Inbox";
 import { useCustomWallet } from "../utils/contexts/CustomWallet";
 // import"../App.css";
 
+
 const LandingPage = () => {
   const wallet = useWallet();
 
@@ -27,7 +28,7 @@ const LandingPage = () => {
   return (
     <div>
       {isConnected ? (
-        <setup-complete />
+        <InboxPage />
       ) : (
         <div className="font-sans">
           {/* Header */}
@@ -82,14 +83,7 @@ const LandingPage = () => {
             {/* </Link> */}
           </header>
           {/* ///////////////main/////////////// */}
-          <main
-          
-            className="flex flex-col md:flex-row items-center justify-between px-4 md:px-10 py-10 md:py-20 bg-white-50"
-            style={
-              { backgroundImage: " linear-gradient(rgba(255, 255, 255, 0.7), rgba(255, 255, 255, 0.5)),url('/png/brand.png')"  }}
-              
-          >
-
+          <main className="flex flex-col md:flex-row items-center justify-between px-4 md:px-10 py-10 md:py-20 bg-white-50">
             <div className="w-full md:max-w-lg ">
               <img
                 src="/png/suimail.sig.png"
@@ -123,31 +117,8 @@ const LandingPage = () => {
               alt="SuiMail guard-illustration"
               className="hidden md:block max-w-[100px] lg:max-w-[400px] bouncing-image "
             />
-
-            {/* <div className="flex justify-center gap-4 mt-8">
-              <div className="flex space-x-4 overflow-x-auto">
-               
-                {[...Array(10)].map((_, index) => (
-                  <img
-                    key={index}
-                    src={/png/avatar.png}
-                    alt={`Image ${index + 1}`}
-                    className="w-24 h-24 rounded-full object-cover"
-                  />
-                ))}
-              </div>
-            </div> */}
           </main>
-          {/* <div className="flex overflow-x-auto gap-6 scroll-snap-x ">
-            {[...Array(20)].map((_, index) => (
-              <img
-                key={index}
-                src="/png/avatar.png"
-                alt={`Image ${index + 1}`}
-                className="w-15 h-12 rounded-full scroll-snap-align"
-              />
-            ))}
-          </div> */}
+
           {/* {Features and benefits} */}
           <section className="py-20 bg-white relative overflow-hidden">
             {/* Background Image */}
@@ -225,9 +196,9 @@ const LandingPage = () => {
                 {/* Feature 3 */}
                 <div className="bg-white bg-opacity-60 shadow-lg  p-6 backdrop-filter backdrop-blur-md">
                   <p className="text-gray-600">
-                    Suimail integrates ZkLogin and wallet-based authentication
-                    for secure, seamless access, empowering users to manage
-                    emails through blockchain technology..
+                    Suimail integrates ZkLogin and wallet-based
+                    authentication for secure, seamless access, empowering users
+                    to manage emails through blockchain technology..
                   </p>
                   <h4 className="text-lg font-bold text-gray-800 mt-4">
                     Integration with ZkLogin and wallet-based authentication
@@ -275,18 +246,20 @@ const LandingPage = () => {
                 Customer Segments
               </h2>
               <p className="mt-4 text-gray-600 max-w-2xl mx-auto font-bold">
-                Individual Users: Privacy-conscious individuals, Web3
-                enthusiasts, crypto users, and DAOs.
-                <br /> Journalists, activists, and high-risk groups needing
-                secure communication.
-                <br />
-                <h2 className="py-2">
-                  Enterprise Users : Businesses requiring private, branded email
-                  solutions.
-                  <br />
-                  Government agencies focused on compliance and secure
-                  email-system
-                </h2>
+              Individual Users:
+ Privacy-conscious
+ individuals, Web3 enthusiasts,
+ crypto users, and DAOs.<br/> Journalists, activists,
+ and high-risk groups
+ needing secure
+ communication.<br/>
+
+ <h2 className="py-2">Enterprise Users :
+  Businesses requiring
+ private, branded email
+ solutions.<br/>Government agencies
+ focused on compliance
+ and secure email-system</h2>
               </p>
 
               <div className="mt-10 grid gap-8 md:grid-cols-3">

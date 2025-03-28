@@ -4,7 +4,7 @@ import WalletConnect from "./pages/connect-wallet";
 import HomePage from "./pages/Home-Page.jsx";
 // import CreateAccount from './pages/CreateAccount.jsx'
 // import CreatePassword from './pages/create-password.jsx'
-import SetupComplete from './pages//Auth/setup-complete.jsx'
+// import SetupComplete from './pages/setup-complete.jsx'
 // import Login from './pages/login.jsx'
 import Sidebar from "./pages/Sidebar.tsx";
 import EmailList from "./pages/Email-list.jsx";
@@ -76,11 +76,8 @@ function App({ children }) {
                       <Route path="/Home-page" element={<HomePage />} />
                       {/* <Route path="/CreateAccount" element={<CreateAccount />} />
                         <Route path="/CreatePassword" element={<CreatePassword />} />
+                        <Route path="/setup-complete" element={<SetupComplete />} />
                         <Route path="/login-page" element={<Login />} /> */}
-                      <Route
-                        path="/setup-complete"
-                        element={<SetupComplete />}
-                      />
                       <Route path="/Side-bar" element={<Sidebar />} />
                       <Route path="/Email-list" element={<EmailList />} />
                       <Route
