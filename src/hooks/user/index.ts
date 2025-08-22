@@ -24,10 +24,10 @@ export const useGetUserMailFeeAndAddressQuery = (
   return useQuery({
     ...(options ?? {}),
     queryKey: ['user-mail-fee-and-address', recipient],
-    queryFn: async () => {
+    queryFn: async ({ signal }) => {
       const [mailFeeData, addressData] = await Promise.all([
-        httpService.get(`/user/${recipient}/mailfee`),
-        httpService.get(`/user/${recipient}/address`),
+        httpService.get(`/user/${recipient}/mailfee`, { signal }),
+        httpService.get(`/user/${recipient}/address`, { signal }),
       ])
 
       return { mailFee: mailFeeData.mailFee, address: addressData.address }

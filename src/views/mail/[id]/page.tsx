@@ -13,6 +13,7 @@ import { useToastContext } from '@/components/ui/toast'
 import { useQueryClient } from '@tanstack/react-query'
 import { TooltipContent, TooltipTrigger } from '@/components/ui/tooltip'
 import { Tooltip } from '@/components/ui/tooltip'
+import RenderAttachments from './components/RenderAttachments'
 
 export default function EmailViewPage() {
   const navigate = useNavigate()
@@ -36,6 +37,11 @@ export default function EmailViewPage() {
   })
 
   const isInbox = useMemo(() => pathname.startsWith('/mail/inbox'), [pathname])
+
+  const hasAttachments = useMemo(
+    () => mail?.attachments && mail.attachments.length > 0,
+    [mail?.attachments]
+  )
 
   const firstCreatedObjectId = useMemo(
     () =>
@@ -174,13 +180,17 @@ export default function EmailViewPage() {
           </h1>
 
           {/* Email body */}
-          <div className="prose max-w-none">
+          <div className="max-w-none">
             {mail.body.split('\n').map((paragraph, index) => (
               <p key={index} className="mb-4 text-gray-700 leading-relaxed">
                 {paragraph}
               </p>
             ))}
           </div>
+
+          {hasAttachments && (
+            <RenderAttachments attachments={mail.attachments ?? []} />
+          )}
         </div>
 
         {/* Quick reply */}

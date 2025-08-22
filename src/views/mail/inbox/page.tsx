@@ -1,10 +1,12 @@
 import { useMemo } from 'react'
 import { useFetchInboxQuery } from '@/hooks/mail'
-import { PageLayout } from '@/components/layouts/PageLayout'
+import {
+  PageLayout,
+  MailBoardPageLayout,
+  DefaultPagePadding,
+} from '@/components/layouts'
 import { ExtendedToolbar } from '@/components/ExtendedToolbar'
 import { EmailList } from '@/components/EmailViewComponents/EmailList'
-import { MailBoardPageLayout } from '@/components/layouts/MailBoardPageLayout'
-import { DefaultPagePadding } from '@/components/layouts/DefaultPagePadding'
 
 export default function InboxPage() {
   const { data: inbox, isFetching, isError, refetch } = useFetchInboxQuery()

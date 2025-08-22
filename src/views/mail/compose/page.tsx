@@ -6,8 +6,15 @@ import { usePostSendMailMutation } from '@/hooks/mail'
 import { FormSection } from './components/FormSection'
 import { useToastContext } from '@/components/ui/toast'
 import { useCreateEscrowTx } from './utils/create-escrow-tx'
-import { MailBoardPageLayout } from '@/components/layouts/MailBoardPageLayout'
-import { DefaultPagePadding } from '@/components/layouts/DefaultPagePadding'
+import { MailBoardPageLayout, DefaultPagePadding } from '@/components/layouts'
+import {
+  checkValidAttachmentSize,
+  checkValidTotalAttachmentsSize,
+  MAX_ATTACHMENT_SIZE,
+  MAX_ATTACHMENTS_TOTAL_SIZE,
+} from './helpers/checkers'
+import prettyBytes from 'pretty-bytes'
+import { AxiosError } from 'axios'
 
 interface ComposeMailValues {
   recipient: string
@@ -55,18 +62,56 @@ export default function ComposePage() {
         formData.append('digest', createEscrowTxDigest)
       }
 
+      if (data.attachments) {
+        if (checkValidAttachmentSize(data.attachments)) {
+          setNotification({
+            message: 'Invalid attachment size',
+            description: `Attachment must be around ${prettyBytes(
+              MAX_ATTACHMENT_SIZE,
+              {
+                maximumFractionDigits: 0,
+              }
+            )}`,
+            type: 'error',
+          })
+          return
+        }
+
+        if (!checkValidTotalAttachmentsSize(data.attachments)) {
+          setNotification({
+            message: `Total attachments size is too large. Max ${prettyBytes(
+              MAX_ATTACHMENTS_TOTAL_SIZE,
+              {
+                maximumFractionDigits: 0,
+              }
+            )}`,
+            type: 'error',
+          })
+          return
+        }
+      }
+
       data.attachments?.forEach(file => formData.append('attachments', file))
 
-      sendMail(formData).then(async () => {
-        setNotification({
-          message: 'Mail sent successfully',
-          type: 'success',
+      sendMail(formData)
+        .then(async () => {
+          setNotification({
+            message: 'Mail sent successfully',
+            type: 'success',
+          })
+          await queryClient.invalidateQueries({
+            queryKey: ['outbox-mails'],
+          })
+          navigate('/mail/sent')
         })
-        await queryClient.invalidateQueries({
-          queryKey: ['outbox-mails'],
+        .catch(error => {
+          if (error instanceof AxiosError) {
+            setNotification({
+              message: error.response?.data.message,
+              type: 'error',
+            })
+          }
         })
-        navigate('/mail/sent')
-      })
     } catch {
       setNotification({
         message: 'Failed to send mail',

@@ -4,9 +4,10 @@ import { useQueryClient } from '@tanstack/react-query'
 import { FormSection } from './components/FormSection'
 import { useToastContext } from '@/components/ui/toast'
 import { useSetUserSuimailNsMutation } from '@/hooks/user'
-import { MailBoardPageLayout } from '@/components/layouts/MailBoardPageLayout'
+import { MailBoardPageLayout } from '@/components/layouts'
 import { ConfirmSuimailNSModal } from './components/ConfirmSuimailNSModal'
 import { AxiosError } from 'axios'
+import { isValidSuimailAddress } from '@/utils/helpers'
 
 export default function OnboardingPage() {
   const queryClient = useQueryClient()
@@ -32,17 +33,10 @@ export default function OnboardingPage() {
   }: {
     suimailNS: string
   }) => {
-    if (
-      !suimailNS.length ||
-      !suimailNS.match(/.*@suimail$/) ||
-      !suimailNS.split('@')[0].match(/^[a-zA-Z0-9][a-zA-Z0-9.]*[a-zA-Z0-9]$/) ||
-      suimailNS.split('@')[0].length < 3 ||
-      suimailNS.split('@')[0].length > 20
-    ) {
+    if (!isValidSuimailAddress(suimailNS)) {
       setNotification({
         message: 'Invalid SuiMail NS',
-        description:
-          'Please enter a valid SuiMail NS. It must be between 3 and 20 characters and contain only alphanumeric characters.',
+        description: 'Please enter a valid SuiMail NS',
         type: 'error',
       })
       return
@@ -53,17 +47,10 @@ export default function OnboardingPage() {
   }
 
   const handleSubmit = async () => {
-    if (
-      !suimailNS.length ||
-      !suimailNS.match(/.*@suimail$/) ||
-      !suimailNS.split('@')[0].match(/^[a-zA-Z0-9][a-zA-Z0-9.]*[a-zA-Z0-9]$/) ||
-      suimailNS.split('@')[0].length < 3 ||
-      suimailNS.split('@')[0].length > 20
-    ) {
+    if (!isValidSuimailAddress(suimailNS)) {
       setNotification({
         message: 'Invalid SuiMail NS',
-        description:
-          'Please enter a valid SuiMail NS. It must be between 3 and 20 characters and contain only alphanumeric characters.',
+        description: 'Please enter a valid SuiMail NS',
         type: 'error',
       })
       return
