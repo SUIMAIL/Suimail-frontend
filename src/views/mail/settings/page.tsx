@@ -5,7 +5,7 @@ import { NotificationsView } from './views/Notifications'
 import { AccountView } from './views/Account'
 import { PreferencesView } from './views/Preferences'
 import { SubnameView } from './views/Subname'
-import { PageLayout } from '@/components/layouts/PageLayout'
+import { PageLayout } from '@/components/layouts'
 import { ExtendedToolbar } from '@/components/ExtendedToolbar'
 
 const tabs: SettingsTab[] = [

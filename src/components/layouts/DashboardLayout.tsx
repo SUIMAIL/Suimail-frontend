@@ -7,7 +7,7 @@ import { useGetAuthUserQuery } from '@/hooks/auth'
 import { SidebarProvider } from '../ui/sidebar'
 import { LogoutModalProvider } from '../LogoutModal'
 
-export function DashboardLayout() {
+const DashboardLayout = () => {
   const navigate = useNavigate()
   const { pathname } = useLocation()
   const [isLoading, setIsLoading] = useState(true)
@@ -56,3 +56,5 @@ export function DashboardLayout() {
     </SidebarProvider>
   )
 }
+
+export default DashboardLayout

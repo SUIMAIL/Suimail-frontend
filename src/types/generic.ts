@@ -1,4 +1,5 @@
 import type { LucideIcon } from 'lucide-react'
+import type { IAttachmentType } from './attachment'
 
 export interface IUser {
   address: string
@@ -9,6 +10,11 @@ export interface IUser {
   imageUrl?: string
 }
 
+export interface IEmailAttachment {
+  fileName: string
+  fileType: IAttachmentType
+  content: string
+}
 export interface IEmail {
   id: string
   subject: string
@@ -26,6 +32,7 @@ export interface IEmail {
       identifier: string
     }
   }
+  attachments?: IEmailAttachment[]
 }
 
 export interface IPlan {

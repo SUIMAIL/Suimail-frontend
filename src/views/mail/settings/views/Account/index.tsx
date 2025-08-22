@@ -5,7 +5,7 @@ import {
 } from '@/hooks/user'
 import { useToastContext } from '@/components/ui/toast'
 import { SetMailFeeCard } from './components/SetMailFeeCard'
-import { PageLayout } from '@/components/layouts/PageLayout'
+import { PageLayout } from '@/components/layouts'
 import { SubviewHeader } from '../../components/subview-header'
 import { SetWhiteAndBlackListAddress } from './components/SetWhiteAndBlackListAddress'
 import { useQueryClient } from '@tanstack/react-query'

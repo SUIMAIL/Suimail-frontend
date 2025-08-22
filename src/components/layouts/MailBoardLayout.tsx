@@ -7,7 +7,7 @@ import useMediaQuery from '@/hooks/useMediaQuery'
 import { useMemo } from 'react'
 import { LogoutModal, useLogoutModal } from '../LogoutModal'
 
-export function MailBoardLayout() {
+const MailBoardLayout = () => {
   const { data: user, isFetching } = useGetAuthUserQuery()
 
   const { pathname } = useLocation()
@@ -36,3 +36,5 @@ export function MailBoardLayout() {
     </>
   )
 }
+
+export default MailBoardLayout
