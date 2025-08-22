@@ -35,9 +35,9 @@ export function EmailTab({
 
   const renderActorImageUrl = useMemo(() => {
     if (isInboxPage) {
-      return mail.sender.imageUrl || '/images/avatar.png'
+      return mail.sender?.imageUrl || '/images/avatar.png'
     }
-    return mail.recipient.imageUrl || '/images/avatar.png'
+    return mail.recipient?.imageUrl || '/images/avatar.png'
   }, [isInboxPage, mail])
 
   const renderActorSuimailNs = useMemo(() => {
