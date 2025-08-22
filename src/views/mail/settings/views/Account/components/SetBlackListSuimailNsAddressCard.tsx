@@ -7,7 +7,7 @@ import {
   useRemoveFromBlackListMutation,
   useSetUserBlackListMutation,
 } from '@/hooks/user'
-import { isValidSuimailAddress } from '@/utils/emailValidation'
+import { isValidSuimailAddress } from '@/utils/helpers'
 import { useQueryClient } from '@tanstack/react-query'
 import { AxiosError } from 'axios'
 

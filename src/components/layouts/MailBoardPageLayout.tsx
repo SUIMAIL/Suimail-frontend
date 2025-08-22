@@ -4,10 +4,12 @@ interface MailBoardPageLayoutProps {
   children: React.ReactNode
 }
 
-export function MailBoardPageLayout({ children }: MailBoardPageLayoutProps) {
+const MailBoardPageLayout = ({ children }: MailBoardPageLayoutProps) => {
   return (
     <EmailListProvider>
       <div className="w-full p-4">{children}</div>
     </EmailListProvider>
   )
 }
+
+export default MailBoardPageLayout

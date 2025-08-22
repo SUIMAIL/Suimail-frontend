@@ -5,7 +5,7 @@ import { cn } from '@/lib/utils'
 import { useEffect, useMemo, useState } from 'react'
 import { Checkbox } from '../ui/checkbox'
 import { useQueryClient } from '@tanstack/react-query'
-import { randomId } from '@/utils/helpers/random-id'
+import { generateRandomId } from '@/utils/helpers'
 
 interface EmailTabProps {
   mail: IEmail
@@ -144,7 +144,7 @@ export function EmailTab({
           <div className="relative flex-shrink-0">
             <img
               src={renderActorImageUrl}
-              alt={mail.sender.suimailNs || randomId()}
+              alt={mail.sender.suimailNs || generateRandomId()}
               className="h-9 w-9 rounded-full object-cover overflow-hidden"
             />
             {!mailIsRead && (

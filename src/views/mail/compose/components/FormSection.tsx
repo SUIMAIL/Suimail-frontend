@@ -14,7 +14,10 @@ import {
   useGetUserMailFeeAndAddressQuery,
 } from '@/hooks/user'
 import { AxiosError } from 'axios'
-import { isValidSuimailAddress } from '@/utils/emailValidation'
+import { isValidSuimailAddress } from '@/utils/helpers'
+import { useQueryClient } from '@tanstack/react-query'
+import { calculateTotalAttachmentsSize } from '../helpers/checkers'
+import prettyBytes from 'pretty-bytes'
 
 const formSchema = z.object({
   recipient: z.string().refine(value => isValidSuimailAddress(value), {
@@ -38,6 +41,8 @@ interface FormSectionProps {
 }
 
 export function FormSection({ onSubmit, isLoading }: FormSectionProps) {
+  const queryClient = useQueryClient()
+
   const [recipientIsSet, setRecipientIsSet] = useState(false)
   const [recipientAddress, setRecipientAddress] = useState<string | null>(null)
   const [recipientError, setRecipientError] = useState<string | null>(null)
@@ -155,6 +160,29 @@ export function FormSection({ onSubmit, isLoading }: FormSectionProps) {
     }
   }, [mailFeeAndAddressError])
 
+  const handleClearRecipient = () => {
+    const recipient = watch('recipient')
+
+    queryClient.cancelQueries({
+      queryKey: ['user-mail-fee-and-address', recipient],
+    })
+
+    queryClient.cancelQueries({
+      queryKey: ['active-user-list-status', recipient],
+    })
+
+    setRecipientIsSet(false)
+    setRecipientAddress(null)
+    setRecipientError(null)
+    setValue('recipient', '')
+  }
+
+  const attachmentsDetailsText = () => {
+    if (attachments.length === 0) return null
+
+    return `${attachments.length} File${attachments.length > 1 ? 's' : ''} - ${prettyBytes(calculateTotalAttachmentsSize(attachments))}`
+  }
+
   return (
     <form onSubmit={handleSubmit(handleOnSubmit)} className="space-y-5">
       <div>
@@ -193,10 +221,7 @@ export function FormSection({ onSubmit, isLoading }: FormSectionProps) {
                 type="button"
                 variant="link"
                 className="absolute top-1/2 -translate-y-1/2 right-2"
-                onClick={() => {
-                  setRecipientIsSet(false)
-                  setValue('recipient', '')
-                }}
+                onClick={handleClearRecipient}
               >
                 <X className="w-4 h-4" />
               </Button>
@@ -238,23 +263,29 @@ export function FormSection({ onSubmit, isLoading }: FormSectionProps) {
           onChange={handleFileChange}
           className="block w-full text-sm text-gray-500"
         />
-        <div className="flex flex-wrap gap-2">
-          {attachments.map((file, index) => (
-            <div
-              key={index}
-              className="flex items-center bg-gray-100 px-3 py-1 rounded-full text-sm"
-            >
-              <Paperclip className="w-4 h-4 mr-1" />
-              {file.name}
-              <button
-                type="button"
-                onClick={() => removeAttachment(index)}
-                className="ml-2 text-red-500 hover:text-red-700"
+        <div>
+          <div className="pl-2">
+            <p className="text-xs">{attachmentsDetailsText()}</p>
+          </div>
+
+          <div className=" mt-2 flex flex-wrap gap-2">
+            {attachments.map((file, index) => (
+              <div
+                key={index}
+                className="flex items-center bg-gray-100 px-3 py-1 rounded-full text-sm"
               >
-                <X className="w-4 h-4" />
-              </button>
-            </div>
-          ))}
+                <Paperclip className="w-4 h-4 mr-1" />
+                {file.name}
+                <button
+                  type="button"
+                  onClick={() => removeAttachment(index)}
+                  className="ml-2 text-red-500 hover:text-red-700"
+                >
+                  <X className="w-4 h-4" />
+                </button>
+              </div>
+            ))}
+          </div>
         </div>
       </div>
 

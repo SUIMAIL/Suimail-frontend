@@ -5,7 +5,7 @@ import { cn } from '@/lib/utils'
 import { Label } from '@/components/ui/label'
 import { Input } from '@/components/ui/input'
 import { Button } from '@/components/ui/button'
-import { isValidSuimailAddress } from '@/utils/emailValidation'
+import { isValidSuimailAddress } from '@/utils/helpers'
 
 interface FormSectionProps {
   handleSubmit: ({ suimailNS }: { suimailNS: string }) => void

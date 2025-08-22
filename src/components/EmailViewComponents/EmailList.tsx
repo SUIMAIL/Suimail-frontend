@@ -8,7 +8,7 @@ import {
 } from '@/hooks/mail'
 import { useToastContext } from '../ui/toast'
 import { useMemo } from 'react'
-import { sortEmailsByLatest } from '@/utils/helpers/sort-by-latest'
+import { sortEmailsByLatest } from '@/utils/helpers'
 import { useQueryClient } from '@tanstack/react-query'
 import { useLocation } from 'react-router-dom'
 

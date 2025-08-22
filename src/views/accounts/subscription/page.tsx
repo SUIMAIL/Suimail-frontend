@@ -1,14 +1,16 @@
 import SubscriptionPlans from './components/Prices'
-import { PageLayout } from '@/components/layouts/PageLayout'
 import { ExtendedToolbar } from '@/components/ExtendedToolbar'
 import { Benefits } from './components/Benefits'
-import { MailBoardPageLayout } from '@/components/layouts/MailBoardPageLayout'
 import {
   SubscriptionHeader,
   type BillingCycle,
 } from './components/SubscriptionHeader'
 import { useState } from 'react'
-import { DefaultPagePadding } from '@/components/layouts/DefaultPagePadding'
+import {
+  PageLayout,
+  MailBoardPageLayout,
+  DefaultPagePadding,
+} from '@/components/layouts'
 
 export default function SubscriptionPage() {
   const [billingCycle, setBillingCycle] = useState<BillingCycle>('monthly')

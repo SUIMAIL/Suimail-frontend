@@ -9,7 +9,7 @@ import {
 } from '@/hooks/user'
 import { Plus } from 'lucide-react'
 import { useToastContext } from '@/components/ui/toast'
-import { isValidSuimailAddress } from '@/utils/emailValidation'
+import { isValidSuimailAddress } from '@/utils/helpers'
 import { AxiosError } from 'axios'
 import { useQueryClient } from '@tanstack/react-query'
 

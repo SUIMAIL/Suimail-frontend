@@ -9,7 +9,7 @@ import {
 import { cn } from '@/lib/utils'
 import { X as XIcon } from 'lucide-react'
 import { AnimatePresence, motion } from 'motion/react'
-import { randomId } from '@/utils/helpers/random-id'
+import { generateRandomId } from '@/utils/helpers'
 
 interface ToastNotification {
   id: string
@@ -42,7 +42,7 @@ export const ToastProvider = ({ children }: { children: React.ReactNode }) => {
       }
 
       setNotification({
-        id: randomId(),
+        id: generateRandomId(),
         ...notification,
       })
     },

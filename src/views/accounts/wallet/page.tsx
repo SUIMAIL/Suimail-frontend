@@ -1,11 +1,13 @@
+import { useMemo } from 'react'
 import { ExtendedToolbar } from '@/components/ExtendedToolbar'
-import { PageLayout } from '../../../components/layouts/PageLayout'
 import { HeroCard } from './components/HeroCard'
-import { DefaultPagePadding } from '@/components/layouts/DefaultPagePadding'
-import { MailBoardPageLayout } from '@/components/layouts/MailBoardPageLayout'
 import { useCurrentAccount } from '@mysten/dapp-kit'
 import { AccountNotFoundCard } from './components/AccountNotFoundCard'
-import { useMemo } from 'react'
+import {
+  PageLayout,
+  DefaultPagePadding,
+  MailBoardPageLayout,
+} from '@/components/layouts'
 
 export default function WalletPage() {
   const currentAccount = useCurrentAccount()

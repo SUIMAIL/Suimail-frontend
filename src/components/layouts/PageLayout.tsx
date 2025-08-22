@@ -9,12 +9,12 @@ interface PageLayoutProps {
   children: React.ReactNode
 }
 
-export function PageLayout({
+const PageLayout = ({
   loading = false,
   isError = false,
   retry = () => {},
   children,
-}: PageLayoutProps) {
+}: PageLayoutProps) => {
   const navigate = useNavigate()
 
   if (loading) {
@@ -52,3 +52,5 @@ export function PageLayout({
   }
   return <>{children}</>
 }
+
+export default PageLayout
