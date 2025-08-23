@@ -73,6 +73,74 @@ export function usePostSendMailMutation() {
   })
 }
 
+// New interface for reply data
+interface IPostReplyMail {
+  to: string
+  subject: string
+  body: string
+  inReplyTo?: string
+  originalMessageId?: string
+  walletAddress?: string
+}
+
+// New mutation specifically for replies with validation
+export function usePostSendReplyMutation() {
+  return useMutation({
+    mutationFn: async (replyData: IPostReplyMail) => {
+      // Frontend validation with proper error handling
+      if (!replyData.to || !replyData.subject || !replyData.body) {
+        throw new Error('Missing required fields')
+      }
+
+      // Validate recipient format for suimailNs (more permissive)
+      if (
+        !replyData.to ||
+        replyData.to.length < 1 ||
+        replyData.to.length > 100
+      ) {
+        throw new Error('Invalid recipient format')
+      }
+
+      // Basic sanitization - remove potentially harmful characters
+      const sanitizedTo = replyData.to.replace(/[<>;"']/g, '').trim()
+      if (sanitizedTo !== replyData.to.trim()) {
+        throw new Error('Invalid characters in recipient')
+      }
+
+      // Validate subject length
+      if (replyData.subject.length > 255) {
+        throw new Error('Subject is too long (maximum 255 characters)')
+      }
+
+      // Validate body length
+      if (replyData.body.length > 50000) {
+        throw new Error('Message is too long (maximum 50,000 characters)')
+      }
+
+      // Create FormData for the reply
+      const formData = new FormData()
+      formData.append('from', replyData.walletAddress || '')
+      formData.append('to', sanitizedTo)
+      formData.append('subject', replyData.subject.trim())
+      formData.append('message', replyData.body.trim())
+
+      // Add threading headers if provided
+      if (replyData.inReplyTo) {
+        formData.append('inReplyTo', replyData.inReplyTo)
+      }
+      if (replyData.originalMessageId) {
+        formData.append('references', replyData.originalMessageId)
+      }
+
+      return await httpService.post('/mail/send', formData, {
+        headers: {
+          'Content-Type': 'multipart/form-data',
+        },
+      })
+    },
+  })
+}
+
 export function usePostMarkMailsAsReadMutation() {
   return useMutation({
     mutationFn: async ({ mailIds }: { mailIds: string[] }) => {

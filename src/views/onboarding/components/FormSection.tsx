@@ -21,9 +21,9 @@ export function FormSection({
   const [suimailNS, setSuimailNS] = useState('')
 
   const sampleSuimailNSs = [
-    'aliceweb3@suimail',
-    'blockchain.dev@suimail',
-    'crypto.trader@suimail',
+    'aliceweb3@suimailapp',
+    'blockchain.dev@suimailapp',
+    'crypto.trader@suimailapp',
   ]
 
   const isValid = useMemo(() => {
@@ -55,7 +55,7 @@ export function FormSection({
                 <Input
                   id="suimailns"
                   type="text"
-                  placeholder="e.g. leadzid@suimail"
+                  placeholder="e.g. leadzid@suimailapp"
                   value={suimailNS}
                   onChange={e => setSuimailNS(e.target.value)}
                   className="pr-10"

@@ -7,7 +7,7 @@ export const isValidSuimailAddress = (email: string): boolean => {
   if (!email) return false
 
   return !!(
-    email.match(/.*@suimail$/) &&
+    email.match(/.*@suimailapp$/) &&
     email.split('@')[0].match(/^[a-zA-Z0-9][a-zA-Z0-9.]*[a-zA-Z0-9]$/) &&
     email.split('@')[0].length >= 3 &&
     email.split('@')[0].length <= 20 &&

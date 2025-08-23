@@ -34,15 +34,14 @@ export default function OnboardingPage() {
   }) => {
     if (
       !suimailNS.length ||
-      !suimailNS.match(/.*@suimail$/) ||
+      !suimailNS.match(/.*@suimailapp$/) ||
       !suimailNS.split('@')[0].match(/^[a-zA-Z0-9][a-zA-Z0-9.]*[a-zA-Z0-9]$/) ||
       suimailNS.split('@')[0].length < 3 ||
       suimailNS.split('@')[0].length > 20
     ) {
       setNotification({
         message: 'Invalid SuiMail NS',
-        description:
-          'Please enter a valid SuiMail NS. It must be between 3 and 20 characters and contain only alphanumeric characters.',
+        description: 'Please enter a valid SuiMail NS.',
         type: 'error',
       })
       return
@@ -55,15 +54,14 @@ export default function OnboardingPage() {
   const handleSubmit = async () => {
     if (
       !suimailNS.length ||
-      !suimailNS.match(/.*@suimail$/) ||
+      !suimailNS.match(/.*@suimailapp$/) ||
       !suimailNS.split('@')[0].match(/^[a-zA-Z0-9][a-zA-Z0-9.]*[a-zA-Z0-9]$/) ||
       suimailNS.split('@')[0].length < 3 ||
       suimailNS.split('@')[0].length > 20
     ) {
       setNotification({
         message: 'Invalid SuiMail NS',
-        description:
-          'Please enter a valid SuiMail NS. It must be between 3 and 20 characters and contain only alphanumeric characters.',
+        description: 'Please enter a valid SuiMail NS. .',
         type: 'error',
       })
       return

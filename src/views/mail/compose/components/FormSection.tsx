@@ -18,7 +18,7 @@ import { isValidSuimailAddress } from '@/utils/emailValidation'
 
 const formSchema = z.object({
   recipient: z.string().refine(value => isValidSuimailAddress(value), {
-    message: 'Please enter a valid suimail address (e.g. name@suimail)',
+    message: 'Please enter a valid suimail address (e.g. name@suimailapp)',
   }),
   subject: z.string().min(1, 'Subject is required'),
   message: z.string().min(1, 'Message is required'),
@@ -161,7 +161,7 @@ export function FormSection({ onSubmit, isLoading }: FormSectionProps) {
         <FormField
           label="To"
           name="recipient"
-          placeholder="e.g. jane@sui.id"
+          placeholder="e.g. jane@suimailapp"
           error={errors.recipient?.message || recipientError}
           register={register}
           required

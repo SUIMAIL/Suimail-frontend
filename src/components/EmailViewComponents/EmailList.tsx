@@ -18,7 +18,16 @@ interface EmailListProps {
 }
 
 export function EmailList({ mails, refetch }: EmailListProps) {
-  const hasEmails = mails.length > 0
+  // Add defensive check for mails prop
+  const safeMails = useMemo(() => {
+    if (!mails || !Array.isArray(mails)) {
+      console.warn('EmailList: mails prop is not an array:', mails)
+      return []
+    }
+    return mails
+  }, [mails])
+
+  const hasEmails = safeMails.length > 0
   const { pathname } = useLocation()
 
   const isInboxPage = useMemo(() => pathname === '/mail/inbox', [pathname])
@@ -45,7 +54,7 @@ export function EmailList({ mails, refetch }: EmailListProps) {
 
   const handleSelectAllEmails = (checked: boolean) => {
     if (checked) {
-      setSelectedEmails(mails)
+      setSelectedEmails(safeMails)
     } else {
       setSelectedEmails([])
     }
@@ -127,8 +136,8 @@ export function EmailList({ mails, refetch }: EmailListProps) {
   }
 
   const sortedEmails = useMemo(() => {
-    return sortEmailsByLatest(mails)
-  }, [mails])
+    return sortEmailsByLatest(safeMails)
+  }, [safeMails])
 
   return (
     <div className="flex flex-col rounded-lg border border-gray-200 bg-white shadow-sm">
@@ -142,7 +151,7 @@ export function EmailList({ mails, refetch }: EmailListProps) {
         />
 
         <span className="text-sm text-gray-500">
-          {mails.length} {mails.length > 1 ? 'mails' : 'mail'}
+          {safeMails.length} {safeMails.length > 1 ? 'mails' : 'mail'}
         </span>
       </div>
 
