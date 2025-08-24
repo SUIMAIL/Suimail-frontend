@@ -7,7 +7,7 @@ import { Button } from '@/components/ui/button'
 import {
   useFetchMailBodyQuery,
   usePostDeleteMailMutation,
-  usePostSendReplyMutation,
+  // usePostSendReplyMutation,
 } from '@/hooks/mail'
 import { useSuiClientQuery } from '@mysten/dapp-kit'
 import MailNotFound from '@/components/MailNotFound'
@@ -38,7 +38,7 @@ export default function EmailViewPage() {
     usePostDeleteMailMutation()
 
   // Use the new reply mutation with built-in validation
-  const { mutateAsync: sendReply } = usePostSendReplyMutation()
+  // const { mutateAsync: sendReply } = usePostSendReplyMutation()
 
   const { data } = useSuiClientQuery('getTransactionBlock', {
     digest: txDigest,
@@ -102,44 +102,44 @@ export default function EmailViewPage() {
     setIsReplying(true)
   }
 
-  const handleSendReply = async (replyData: {
-    to: string
-    subject: string
-    body: string
-    inReplyTo: string
-    originalMessageId: string
-  }) => {
-    try {
-      // Use the new reply mutation with built-in validation
-      await sendReply({
-        to: replyData.to,
-        subject: replyData.subject,
-        body: replyData.body,
-        inReplyTo: replyData.inReplyTo,
-        originalMessageId: replyData.originalMessageId,
-        walletAddress: '', // Add your wallet address logic here if needed
-      })
+  // const handleSendReply = async (replyData: {
+  //   to: string
+  //   subject: string
+  //   body: string
+  //   inReplyTo: string
+  //   originalMessageId: string
+  // }) => {
+  //   try {
+  //     // Use the new reply mutation with built-in validation
+  //     await sendReply({
+  //       to: replyData.to,
+  //       subject: replyData.subject,
+  //       body: replyData.body,
+  //       inReplyTo: replyData.inReplyTo,
+  //       originalMessageId: replyData.originalMessageId,
+  //       walletAddress: '', // Add your wallet address logic here if needed
+  //     })
 
-      // Invalidate relevant queries to refresh the UI
-      await queryClient.invalidateQueries({
-        predicate: query =>
-          query.queryKey[0] === 'outbox-mails' ||
-          query.queryKey[0] === 'inbox-mails',
-      })
+  //     // Invalidate relevant queries to refresh the UI
+  //     await queryClient.invalidateQueries({
+  //       predicate: query =>
+  //         query.queryKey[0] === 'outbox-mails' ||
+  //         query.queryKey[0] === 'inbox-mails',
+  //     })
 
-      setNotification({
-        message: 'Reply sent successfully',
-        type: 'success',
-      })
-    } catch (error: any) {
-      console.error('Failed to send reply:', error)
-      setNotification({
-        message: error.message || 'Failed to send reply',
-        type: 'error',
-      })
-      throw error // Re-throw to let ReplyComposer handle the error state
-    }
-  }
+  //     setNotification({
+  //       message: 'Reply sent successfully',
+  //       type: 'success',
+  //     })
+  //   } catch (error: any) {
+  //     console.error('Failed to send reply:', error)
+  //     setNotification({
+  //       message: error.message || 'Failed to send reply',
+  //       type: 'error',
+  //     })
+  //     throw error // Re-throw to let ReplyComposer handle the error state
+  //   }
+  // }
 
   const handleCancelReply = () => {
     setIsReplying(false)
@@ -301,7 +301,7 @@ export default function EmailViewPage() {
       {/* Reply Composer Overlay */}
       <ReplyComposer
         originalEmail={mail}
-        onSend={handleSendReply}
+        // onSend={handleSendReply}
         onCancel={handleCancelReply}
         isVisible={isReplying}
       />

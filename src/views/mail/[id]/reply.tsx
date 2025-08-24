@@ -1,34 +1,29 @@
 import { useState, useEffect, useRef } from 'react'
 import { X, Send, Loader2 } from 'lucide-react'
 import { Button } from '@/components/ui/button'
+import type { IEmail } from '@/types/generic'
 
 interface ReplyComposerProps {
-  originalEmail: {
-    id: string
-    sender: { suimailNs: string }
-    subject: string
-    body: string
-    createdAt: string
-  }
-  onSend: (replyData: {
-    to: string
-    subject: string
-    body: string
-    inReplyTo: string
-    originalMessageId: string
-  }) => Promise<void>
+  originalEmail: IEmail
+  // onSend: (replyData: {
+  //   to: string
+  //   subject: string
+  //   body: string
+  //   inReplyTo: string
+  //   originalMessageId: string
+  // }) => Promise<void>
   onCancel: () => void
   isVisible: boolean
 }
 
 export function ReplyComposer({
   originalEmail,
-  onSend,
+  // onSend,
   onCancel,
   isVisible,
 }: ReplyComposerProps) {
   const [replyBody, setReplyBody] = useState('')
-  const [isSending, setIsSending] = useState(false)
+  const [isSending] = useState(false)
   const [error, setError] = useState('')
   const textareaRef = useRef<HTMLTextAreaElement>(null)
 
@@ -54,64 +49,62 @@ export function ReplyComposer({
   }
 
   // Generate quoted original message
-  const quotedOriginalMessage = `
+  //   const quotedOriginalMessage = `
 
+  // --- Original Message ---
+  // From: ${originalEmail.sender.suimailNs}
+  // Date: ${formatDate(originalEmail.createdAt)}
+  // Subject: ${originalEmail.subject}
 
-
---- Original Message ---
-From: ${originalEmail.sender.suimailNs}
-Date: ${formatDate(originalEmail.createdAt)}
-Subject: ${originalEmail.subject}
-
-${originalEmail.body
-  .split('\n')
-  .map(line => `> ${line}`)
-  .join('\n')}`
+  // ${originalEmail.body
+  //   .split('\n')
+  //   .map(line => `> ${line}`)
+  //   .join('\n')}`
 
   // Generate reply subject (avoid double Re:)
   const replySubject = originalEmail.subject.startsWith('Re: ')
     ? originalEmail.subject
     : `Re: ${originalEmail.subject}`
 
-  const handleSend = async () => {
-    // Basic client-side validation
-    if (!replyBody.trim()) {
-      setError('Please enter a message')
-      return
-    }
+  // const handleSend = async () => {
+  //   // Basic client-side validation
+  //   if (!replyBody.trim()) {
+  //     setError('Please enter a message')
+  //     return
+  //   }
 
-    if (replyBody.trim().length > 10000) {
-      setError('Message is too long (maximum 10,000 characters)')
-      return
-    }
+  //   if (replyBody.trim().length > 10000) {
+  //     setError('Message is too long (maximum 10,000 characters)')
+  //     return
+  //   }
 
-    setIsSending(true)
-    setError('')
+  //   setIsSending(true)
+  //   setError('')
 
-    try {
-      await onSend({
-        to: originalEmail.sender.suimailNs,
-        subject: replySubject,
-        body: replyBody.trim() + quotedOriginalMessage,
-        inReplyTo: originalEmail.id,
-        originalMessageId: originalEmail.id,
-      })
+  //   try {
+  //     await onSend({
+  //       to: originalEmail.sender.suimailNs,
+  //       subject: replySubject,
+  //       body: replyBody.trim() + quotedOriginalMessage,
+  //       inReplyTo: originalEmail.id,
+  //       originalMessageId: originalEmail.id,
+  //     })
 
-      // Reset form on successful send
-      setReplyBody('')
-    } catch (err: any) {
-      setError(err.message || 'Failed to send reply. Please try again.')
-      console.error('Reply send error:', err)
-    } finally {
-      setIsSending(false)
-    }
-  }
+  //     // Reset form on successful send
+  //     setReplyBody('')
+  //   } catch (err: any) {
+  //     setError(err.message || 'Failed to send reply. Please try again.')
+  //     console.error('Reply send error:', err)
+  //   } finally {
+  //     setIsSending(false)
+  //   }
+  // }
 
   const handleKeyDown = (e: React.KeyboardEvent) => {
     // Send with Ctrl/Cmd + Enter
     if ((e.ctrlKey || e.metaKey) && e.key === 'Enter' && !isSending) {
       e.preventDefault()
-      handleSend()
+      // handleSend()
     }
     // Cancel with Escape
     if (e.key === 'Escape' && !isSending) {
@@ -149,7 +142,7 @@ ${originalEmail.body
           </div>
 
           <Button
-            onClick={handleSend}
+            // onClick={handleSend}
             disabled={isSending || !replyBody.trim()}
             className="bg-blue-500 hover:bg-blue-600 text-white disabled:opacity-50 disabled:cursor-not-allowed"
           >
