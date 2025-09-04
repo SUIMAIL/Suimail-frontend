@@ -1,14 +1,26 @@
 import { useState, useEffect, useMemo } from 'react'
+import type { IEmail } from '@/types/generic'
 import { useLocation, useNavigate, useParams } from 'react-router-dom'
-import { ArrowLeft, Trash2, Reply, Loader2 } from 'lucide-react'
-import { format } from 'date-fns'
+import {
+  ArrowLeft,
+  Trash2,
+  Reply,
+  Loader2,
+  ExternalLink,
+  ChevronDown,
+  ChevronRight,
+  MoreVertical,
+  Star,
+  Archive,
+  Forward,
+} from 'lucide-react'
 import { Loading } from '@/components/Loading'
 import { Button } from '@/components/ui/button'
 import {
-  useFetchMailBodyQuery,
   usePostDeleteMailMutation,
-  // usePostSendReplyMutation,
+  usePostSendMailMutation,
 } from '@/hooks/mail'
+import { useFetchMailBodyQuery } from '@/hooks/mail'
 import { useSuiClientQuery } from '@mysten/dapp-kit'
 import MailNotFound from '@/components/MailNotFound'
 import { SimpleAvatar } from '@/components/ui/SimpleAvatar'
@@ -20,6 +32,288 @@ import { Tooltip } from '@/components/ui/tooltip'
 import { ReplyComposer } from './reply'
 import RenderAttachments from './components/RenderAttachments'
 
+// Enhanced email body formatter component
+const EmailBodyFormatter = ({
+  body,
+  isQuoted = false,
+}: {
+  body: string
+  isQuoted?: boolean
+}) => {
+  const formatEmailBody = (text: string) => {
+    // Split by paragraphs first
+    const paragraphs = text.split('\n\n').filter(p => p.trim())
+
+    return paragraphs.map((paragraph, pIndex) => {
+      // Handle each line within the paragraph
+      const lines = paragraph.split('\n')
+
+      return (
+        <div
+          key={pIndex}
+          className={`mb-4 ${isQuoted ? 'text-gray-600' : 'text-gray-900'}`}
+        >
+          {lines.map((line, lIndex) => {
+            // Check if line is a quote (starts with >)
+            if (line.trim().startsWith('>')) {
+              return (
+                <div
+                  key={lIndex}
+                  className="border-l-3 border-gray-300 pl-3 ml-2 mb-2"
+                >
+                  <span className="text-gray-600 italic">
+                    {formatTextWithLinks(line.replace(/^>\s*/, ''))}
+                  </span>
+                </div>
+              )
+            }
+
+            // Check if line is a header (email signature style)
+            if (line.match(/^(From|To|Subject|Date|Sent):\s/i)) {
+              return (
+                <div
+                  key={lIndex}
+                  className="text-sm text-gray-500 font-medium mb-1"
+                >
+                  {formatTextWithLinks(line)}
+                </div>
+              )
+            }
+
+            // Regular paragraph line
+            return (
+              <div
+                key={lIndex}
+                className={`leading-relaxed ${lIndex > 0 ? 'mt-1' : ''}`}
+              >
+                {formatTextWithLinks(line)}
+              </div>
+            )
+          })}
+        </div>
+      )
+    })
+  }
+
+  const formatTextWithLinks = (text: string) => {
+    // Enhanced URL regex to catch more patterns
+    const urlRegex =
+      /(https?:\/\/[^\s<>"{}|\\^`[\]]+[^\s<>"{}|\\^`[\].,;:])|(\b[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}\b)/g
+
+    const parts = text.split(urlRegex)
+
+    return parts.map((part, index) => {
+      if (!part) return null
+
+      // Check if it's a URL
+      if (part.match(/^https?:\/\//)) {
+        return (
+          <a
+            key={index}
+            href={part}
+            target="_blank"
+            rel="noopener noreferrer"
+            className="text-blue-600 hover:text-blue-800 hover:underline inline-flex items-center"
+          >
+            {part.length > 50 ? `${part.substring(0, 47)}...` : part}
+            <ExternalLink className="h-3 w-3 ml-1 opacity-70" />
+          </a>
+        )
+      }
+
+      // Check if it's an email
+      if (part.match(/^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}$/)) {
+        return (
+          <a
+            key={index}
+            href={`mailto:${part}`}
+            className="text-blue-600 hover:text-blue-800 hover:underline"
+          >
+            {part}
+          </a>
+        )
+      }
+
+      return <span key={index}>{part}</span>
+    })
+  }
+
+  return <div className="max-w-none">{formatEmailBody(body)}</div>
+}
+
+// Gmail-style quoted message component
+const QuotedMessage = ({
+  email,
+  isExpanded,
+  onToggle,
+}: {
+  email: IEmail
+  isExpanded: boolean
+  onToggle: () => void
+}) => {
+  return (
+    <div className="border border-gray-200 rounded-lg mb-4 bg-gray-50">
+      {/* Collapsed header */}
+      <div
+        className="flex items-center justify-between p-3 cursor-pointer hover:bg-gray-100 transition-colors"
+        onClick={onToggle}
+      >
+        <div className="flex items-center space-x-3 min-w-0 flex-1">
+          <div className="flex-shrink-0">
+            {isExpanded ? (
+              <ChevronDown className="h-4 w-4 text-gray-500" />
+            ) : (
+              <ChevronRight className="h-4 w-4 text-gray-500" />
+            )}
+          </div>
+          <SimpleAvatar
+            initials={email.sender.suimailNs?.[0]?.toUpperCase() || '?'}
+            size="sm"
+          />
+          <div className="min-w-0 flex-1">
+            <div className="flex items-center space-x-2">
+              <span className="text-sm font-medium text-gray-900 truncate">
+                {email.sender.suimailNs}
+              </span>
+              <span className="text-xs text-gray-500 flex-shrink-0">
+                {/* Inline quotedFormatDate to avoid TS error */}
+                {(() => {
+                  const date = new Date(email.createdAt)
+                  const now = new Date()
+                  const diffTime = Math.abs(now.getTime() - date.getTime())
+                  const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24))
+                  if (diffDays === 1) return 'Today'
+                  if (diffDays === 2) return 'Yesterday'
+                  if (diffDays <= 7)
+                    return date.toLocaleDateString('en-US', {
+                      weekday: 'short',
+                    })
+                  return date.toLocaleDateString('en-US', {
+                    month: 'short',
+                    day: 'numeric',
+                  })
+                })()}
+              </span>
+            </div>
+            {!isExpanded && (
+              <div className="text-xs text-gray-500 truncate mt-1">
+                {email.body.substring(0, 100)}...
+              </div>
+            )}
+          </div>
+        </div>
+        <div className="flex items-center space-x-1 ml-2">
+          <Button
+            size="icon"
+            variant="ghost"
+            className="p-1 h-6 w-6 rounded-full hover:bg-gray-200"
+            onClick={e => {
+              e.stopPropagation()
+              // Handle star action
+            }}
+          >
+            <Star className="h-3 w-3 text-gray-400" />
+          </Button>
+          <Button
+            size="icon"
+            variant="ghost"
+            className="p-1 h-6 w-6 rounded-full hover:bg-gray-200"
+            onClick={e => {
+              e.stopPropagation()
+              // Handle more options
+            }}
+          >
+            <MoreVertical className="h-3 w-3 text-gray-400" />
+          </Button>
+        </div>
+      </div>
+
+      {/* Expanded content */}
+      {isExpanded && (
+        <div className="border-t border-gray-200 bg-white">
+          {/* Full email header */}
+          <div className="p-4 border-b border-gray-100 bg-gray-50">
+            <div className="flex items-start justify-between">
+              <div className="flex items-start space-x-3">
+                <SimpleAvatar
+                  initials={email.sender.suimailNs?.[0]?.toUpperCase() || '?'}
+                  size="md"
+                />
+                <div>
+                  <div className="font-medium text-gray-900">
+                    {email.sender.suimailNs}
+                  </div>
+                  <div className="text-sm text-gray-500 mt-1">
+                    <div>to me</div>
+                    <div className="mt-1">
+                      {new Date(email.createdAt).toLocaleDateString('en-US', {
+                        weekday: 'long',
+                        year: 'numeric',
+                        month: 'long',
+                        day: 'numeric',
+                        hour: '2-digit',
+                        minute: '2-digit',
+                      })}
+                    </div>
+                  </div>
+                </div>
+              </div>
+              <div className="flex items-center space-x-1">
+                <Tooltip>
+                  <TooltipTrigger asChild>
+                    <Button
+                      size="icon"
+                      variant="ghost"
+                      className="p-2 h-8 w-8 rounded-full hover:bg-gray-200"
+                    >
+                      <Star className="h-4 w-4 text-gray-400" />
+                    </Button>
+                  </TooltipTrigger>
+                  <TooltipContent>Add to starred</TooltipContent>
+                </Tooltip>
+                <Tooltip>
+                  <TooltipTrigger asChild>
+                    <Button
+                      size="icon"
+                      variant="ghost"
+                      className="p-2 h-8 w-8 rounded-full hover:bg-gray-200"
+                    >
+                      <Reply className="h-4 w-4 text-gray-400" />
+                    </Button>
+                  </TooltipTrigger>
+                  <TooltipContent>Reply</TooltipContent>
+                </Tooltip>
+                <Tooltip>
+                  <TooltipTrigger asChild>
+                    <Button
+                      size="icon"
+                      variant="ghost"
+                      className="p-2 h-8 w-8 rounded-full hover:bg-gray-200"
+                    >
+                      <MoreVertical className="h-4 w-4 text-gray-400" />
+                    </Button>
+                  </TooltipTrigger>
+                  <TooltipContent>More options</TooltipContent>
+                </Tooltip>
+              </div>
+            </div>
+          </div>
+
+          {/* Email content */}
+          <div className="p-4">
+            <EmailBodyFormatter body={email.body} isQuoted={true} />
+            {email.attachments && email.attachments.length > 0 && (
+              <div className="mt-4">
+                <RenderAttachments attachments={email.attachments} />
+              </div>
+            )}
+          </div>
+        </div>
+      )}
+    </div>
+  )
+}
+
 export default function EmailViewPage() {
   const navigate = useNavigate()
   const { pathname } = useLocation()
@@ -28,17 +322,19 @@ export default function EmailViewPage() {
   const { id } = useParams<{ id: string }>()
   const [txDigest, setTxDigest] = useState<string>('')
   const [isReplying, setIsReplying] = useState(false)
+  const [expandedQuotes, setExpandedQuotes] = useState<Set<string>>(new Set())
 
   const { claimEscrowTx } = useClaimEscrowTx()
   const { setNotification } = useToastContext()
 
   const { data: mail, isFetching } = useFetchMailBodyQuery(id ?? '')
+  const [thread, setThread] = useState<IEmail[]>([])
 
   const { mutateAsync: deleteMail, isPending: isDeleting } =
     usePostDeleteMailMutation()
 
-  // Use the new reply mutation with built-in validation
-  // const { mutateAsync: sendReply } = usePostSendReplyMutation()
+  const { mutateAsync: sendMail, isPending: isSending } =
+    usePostSendMailMutation()
 
   const { data } = useSuiClientQuery('getTransactionBlock', {
     digest: txDigest,
@@ -47,25 +343,66 @@ export default function EmailViewPage() {
 
   const isInbox = useMemo(() => pathname.startsWith('/mail/inbox'), [pathname])
 
-  const hasAttachments = useMemo(
-    () => mail?.attachments && mail.attachments.length > 0,
-    [mail?.attachments]
-  )
-
   const firstCreatedObjectId = useMemo(
     () =>
       data?.objectChanges?.find(change => change.type === 'created')?.objectId,
     [data?.objectChanges]
   )
 
+  // Build thread by following parentMailId
   useEffect(() => {
-    if (mail?.digest) {
-      setTxDigest(mail.digest)
+    async function buildThread(currentMail: IEmail | undefined) {
+      if (!currentMail) return setThread([])
+      const chain: IEmail[] = [currentMail]
+      let parentId = currentMail.parentMailId
+      while (parentId) {
+        try {
+          const parent = await fetchMail(parentId)
+          if (!parent) break
+          chain.push(parent)
+          parentId = parent.parentMailId
+        } catch {
+          break
+        }
+      }
+      setThread(chain)
     }
-  }, [mail, firstCreatedObjectId])
+    buildThread(mail)
+  }, [mail])
+
+  // Helper to fetch a mail by id
+  async function fetchMail(mailId: string): Promise<IEmail | null> {
+    try {
+      const res = await fetch(`/mail/${mailId}`)
+      if (!res.ok) return null
+      return await res.json()
+    } catch {
+      return null
+    }
+  }
+
+  const latestMail = thread.length > 0 ? thread[0] : mail
+  const quotedMessages = thread.slice(1)
+
+  useEffect(() => {
+    if (latestMail?.digest) {
+      setTxDigest(latestMail.digest)
+    }
+  }, [latestMail, firstCreatedObjectId])
+
+  const toggleQuotedMessage = (emailId: string) => {
+    setExpandedQuotes(prev => {
+      const newSet = new Set(prev)
+      if (newSet.has(emailId)) {
+        newSet.delete(emailId)
+      } else {
+        newSet.add(emailId)
+      }
+      return newSet
+    })
+  }
 
   if (isFetching) return <Loading message="Loading email..." />
-
   if (!mail) return <MailNotFound />
 
   const handleClaimSui = async () => {
@@ -77,7 +414,7 @@ export default function EmailViewPage() {
   const handleDeleteMail = async () => {
     try {
       await deleteMail({
-        mailId: mail.id,
+        mailId: latestMail?.id || '',
         path: isInbox ? 'recipient' : 'sender',
       }).then(async () => {
         await queryClient.invalidateQueries({
@@ -85,9 +422,8 @@ export default function EmailViewPage() {
             query.queryKey[0] === 'inbox-mails' ||
             query.queryKey[0] === 'outbox-mails' ||
             (query.queryKey[0] === 'mail-body' &&
-              query.queryKey[1] === mail.id),
+              query.queryKey[1] === (latestMail?.id || '')),
         })
-
         navigate(isInbox ? '/mail/inbox' : '/mail/sent')
       })
     } catch {
@@ -102,92 +438,101 @@ export default function EmailViewPage() {
     setIsReplying(true)
   }
 
-  // const handleSendReply = async (replyData: {
-  //   to: string
-  //   subject: string
-  //   body: string
-  //   inReplyTo: string
-  //   originalMessageId: string
-  // }) => {
-  //   try {
-  //     // Use the new reply mutation with built-in validation
-  //     await sendReply({
-  //       to: replyData.to,
-  //       subject: replyData.subject,
-  //       body: replyData.body,
-  //       inReplyTo: replyData.inReplyTo,
-  //       originalMessageId: replyData.originalMessageId,
-  //       walletAddress: '', // Add your wallet address logic here if needed
-  //     })
+  const handleSend = async (replyData: {
+    to: string
+    subject: string
+    body: string
+    inReplyTo?: string
+    originalMessageId?: string
+  }) => {
+    try {
+      const formData = new FormData()
+      formData.append('recipient', replyData.to)
+      formData.append('subject', replyData.subject)
+      formData.append('body', replyData.body)
+      if (replyData.inReplyTo) {
+        formData.append('parentMailId', replyData.inReplyTo)
+      }
 
-  //     // Invalidate relevant queries to refresh the UI
-  //     await queryClient.invalidateQueries({
-  //       predicate: query =>
-  //         query.queryKey[0] === 'outbox-mails' ||
-  //         query.queryKey[0] === 'inbox-mails',
-  //     })
+      await sendMail(formData)
 
-  //     setNotification({
-  //       message: 'Reply sent successfully',
-  //       type: 'success',
-  //     })
-  //   } catch (error: any) {
-  //     console.error('Failed to send reply:', error)
-  //     setNotification({
-  //       message: error.message || 'Failed to send reply',
-  //       type: 'error',
-  //     })
-  //     throw error // Re-throw to let ReplyComposer handle the error state
-  //   }
-  // }
+      await queryClient.invalidateQueries({
+        predicate: query =>
+          query.queryKey[0] === 'outbox-mails' ||
+          query.queryKey[0] === 'inbox-mails',
+      })
+
+      setNotification({
+        message: 'Reply sent successfully',
+        type: 'success',
+      })
+      setIsReplying(false)
+    } catch (error: unknown) {
+      let msg = 'Failed to send reply'
+      if (
+        error &&
+        typeof error === 'object' &&
+        'message' in error &&
+        typeof (error as any).message === 'string'
+      ) {
+        msg = (error as any).message
+      }
+      setNotification({
+        message: msg,
+        type: 'error',
+      })
+      throw error
+    }
+  }
 
   const handleCancelReply = () => {
     setIsReplying(false)
   }
 
   const handleQuickReply = () => {
-    // For the existing quick reply input, open the full composer
     setIsReplying(true)
   }
 
+  if (!latestMail) return null
+
   return (
-    <div className="h-full w-full relative">
-      <div className="absolute inset-0 bg-white border-l border-gray-200 shadow-md z-20 overflow-hidden">
+    <div className="min-h-screen flex flex-col bg-white">
+      <div className="flex-1 flex flex-col bg-white border-l border-gray-200 shadow-sm z-20 overflow-hidden">
+        {/* Enhanced Header */}
         <div className="sticky top-0 z-10 bg-white border-b border-gray-200">
           <div className="flex items-center justify-between p-4">
-            <div className="flex items-center">
+            <div className="flex items-center min-w-0 flex-1">
               <Button
                 variant="ghost"
-                className="mr-4 p-2 hover:bg-gray-100 transition-colors"
+                className="mr-3 p-2 hover:bg-gray-100 transition-colors flex-shrink-0"
                 onClick={() => navigate(-1)}
               >
                 <ArrowLeft className="h-5 w-5 text-gray-600" />
               </Button>
-              <h2 className="text-lg font-medium text-gray-900 truncate">
-                {mail.subject}
-              </h2>
+              <h1 className="text-xl font-medium text-gray-900 truncate">
+                {latestMail.subject}
+              </h1>
+              {thread.length > 1 && (
+                <span className="ml-2 px-2 py-1 bg-gray-100 text-xs text-gray-600 rounded-full flex-shrink-0">
+                  {thread.length} messages
+                </span>
+              )}
             </div>
-
-            <div className="flex items-center space-x-2">
-              {/* Reply Button */}
+            {/* Action buttons */}
+            <div className="flex items-center space-x-1 flex-shrink-0 ml-4">
               <Tooltip>
                 <TooltipTrigger asChild>
                   <Button
                     size="icon"
                     variant="ghost"
                     className="p-2 rounded-full hover:bg-gray-100 transition-colors"
-                    onClick={handleReply}
-                    disabled={isReplying}
                   >
-                    <Reply className="h-5 w-5 text-gray-400" />
+                    <Archive className="h-4 w-4 text-gray-500" />
                   </Button>
                 </TooltipTrigger>
-                <TooltipContent className="bg-gray-800 text-white">
-                  <p>Reply</p>
-                </TooltipContent>
+                <TooltipContent>Archive</TooltipContent>
               </Tooltip>
 
-              {/* Delete Button */}
               <Tooltip>
                 <TooltipTrigger asChild>
                   <Button
@@ -198,113 +543,296 @@ export default function EmailViewPage() {
                     disabled={isDeleting}
                   >
                     {isDeleting ? (
-                      <Loader2 className="h-5 w-5 text-gray-400 animate-spin" />
+                      <Loader2 className="h-4 w-4 text-gray-400 animate-spin" />
                     ) : (
-                      <Trash2 className="h-5 w-5 text-gray-400" />
+                      <Trash2 className="h-4 w-4 text-gray-500" />
                     )}
                   </Button>
                 </TooltipTrigger>
-                <TooltipContent className="bg-red-400 text-white">
-                  <p>Delete</p>
-                </TooltipContent>
+                <TooltipContent>Delete</TooltipContent>
+              </Tooltip>
+
+              <Tooltip>
+                <TooltipTrigger asChild>
+                  <Button
+                    size="icon"
+                    variant="ghost"
+                    className="p-2 rounded-full hover:bg-gray-100 transition-colors"
+                    onClick={handleReply}
+                    disabled={isReplying}
+                  >
+                    <Reply className="h-4 w-4 text-gray-500" />
+                  </Button>
+                </TooltipTrigger>
+                <TooltipContent>Reply</TooltipContent>
+              </Tooltip>
+
+              <Tooltip>
+                <TooltipTrigger asChild>
+                  <Button
+                    size="icon"
+                    variant="ghost"
+                    className="p-2 rounded-full hover:bg-gray-100 transition-colors"
+                  >
+                    <Forward className="h-4 w-4 text-gray-500" />
+                  </Button>
+                </TooltipTrigger>
+                <TooltipContent>Forward</TooltipContent>
+              </Tooltip>
+
+              <Tooltip>
+                <TooltipTrigger asChild>
+                  <Button
+                    size="icon"
+                    variant="ghost"
+                    className="p-2 rounded-full hover:bg-gray-100 transition-colors"
+                  >
+                    <MoreVertical className="h-4 w-4 text-gray-500" />
+                  </Button>
+                </TooltipTrigger>
+                <TooltipContent>More actions</TooltipContent>
               </Tooltip>
             </div>
           </div>
 
-          {/* Action buttons */}
-          {mail.digest && (
-            <div className="flex items-center px-4 pb-4 space-x-2">
+          {/* Sui-specific action buttons */}
+          {latestMail.digest && (
+            <div className="flex items-center px-4 pb-3 space-x-2">
               <button
                 onClick={handleClaimSui}
-                className="flex items-center px-3 py-1.5 rounded-md bg-blue-500 text-white text-sm font-medium hover:bg-blue-600 transition-colors"
+                className="flex items-center px-4 py-2 rounded-lg bg-gradient-to-r from-blue-500 to-blue-600 text-white text-sm font-medium hover:from-blue-600 hover:to-blue-700 transition-all duration-200 shadow-sm hover:shadow-md"
               >
-                Claim Sui
+                <div className="w-2 h-2 bg-white rounded-full mr-2 animate-pulse"></div>
+                Claim Airdrop
               </button>
-            </div>
-          )}
-        </div>
-
-        <div
-          className="p-6 overflow-y-auto"
-          style={{ height: 'calc(100vh - 140px)' }}
-        >
-          <div className="flex items-start mb-6">
-            <div className="flex-1">
-              <div className="flex justify-between items-start">
-                <div>
-                  <h3 className="text-lg font-medium text-gray-900">
-                    {mail.sender.suimailNs}
-                  </h3>
-                  <p className="text-sm text-gray-500">
-                    To: {mail.recipient.suimailNs}
-                  </p>
-                </div>
-
-                <div className="text-right">
-                  <p className="text-sm text-gray-500">
-                    {format(new Date(mail.createdAt), 'PPP')}
-                  </p>
-                  <p className="text-xs text-gray-400">
-                    {format(new Date(mail.createdAt), 'p')}
-                  </p>
-                </div>
+              <div className="text-xs text-gray-500">
+                Transaction: {latestMail.digest.substring(0, 12)}...
               </div>
             </div>
-          </div>
-
-          {/* Subject */}
-          <h1 className="text-2xl font-bold mb-6 text-gray-900">
-            {mail.subject}
-          </h1>
-
-          {/* Email body */}
-          <div className="max-w-none">
-            {mail.body.split('\n').map((paragraph, index) => (
-              <p key={index} className="mb-4 text-gray-700 leading-relaxed">
-                {paragraph}
-              </p>
-            ))}
-          </div>
-
-          {hasAttachments && (
-            <RenderAttachments attachments={mail.attachments ?? []} />
           )}
         </div>
 
-        {/* Enhanced Quick reply section - Only show when not replying */}
+        {/* Email Content Area - Remove fixed height, use flex-1 */}
+        <div className="flex-1 overflow-y-auto">
+          <div className="max-w-4xl mx-auto">
+            {/* Quoted/Previous Messages */}
+            {quotedMessages.length > 0 && (
+              <div className="p-6 space-y-3">
+                {quotedMessages.reverse().map(email => (
+                  <QuotedMessage
+                    key={email.id}
+                    email={email}
+                    isExpanded={expandedQuotes.has(email.id)}
+                    onToggle={() => toggleQuotedMessage(email.id)}
+                  />
+                ))}
+              </div>
+            )}
+
+            {/* Latest/Current Message */}
+            {latestMail && (
+              <div className="border-b border-gray-100 bg-white">
+                {/* Message Header */}
+                <div className="p-6 pb-4">
+                  <div className="flex items-start justify-between mb-4">
+                    <div className="flex items-start space-x-4">
+                      <SimpleAvatar
+                        initials={
+                          latestMail.sender.suimailNs?.[0]?.toUpperCase() || '?'
+                        }
+                        size="lg"
+                      />
+                      <div className="min-w-0 flex-1">
+                        <div className="flex items-center space-x-2 mb-1">
+                          <h2 className="text-lg font-semibold text-gray-900">
+                            {latestMail.sender.suimailNs}
+                          </h2>
+                          <span className="px-2 py-1 bg-green-100 text-green-800 text-xs font-medium rounded-full">
+                            Verified
+                          </span>
+                        </div>
+                        <div className="text-sm text-gray-600 space-y-1">
+                          <div>
+                            <span className="font-medium">to</span> me
+                          </div>
+                          <div className="flex items-center space-x-4">
+                            <span>
+                              {new Date(
+                                latestMail.createdAt
+                              ).toLocaleDateString('en-US', {
+                                weekday: 'long',
+                                year: 'numeric',
+                                month: 'long',
+                                day: 'numeric',
+                                hour: '2-digit',
+                                minute: '2-digit',
+                              })}
+                            </span>
+                            <span className="text-gray-400">•</span>
+                            <span className="text-gray-500">
+                              Via Sui Blockchain
+                            </span>
+                          </div>
+                        </div>
+                      </div>
+                    </div>
+
+                    {/* Quick actions */}
+                    <div className="flex items-center space-x-1 flex-shrink-0">
+                      <Tooltip>
+                        <TooltipTrigger asChild>
+                          <Button
+                            size="icon"
+                            variant="ghost"
+                            className="p-2 rounded-full hover:bg-gray-100 transition-colors"
+                          >
+                            <Star className="h-5 w-5 text-gray-400" />
+                          </Button>
+                        </TooltipTrigger>
+                        <TooltipContent>Star this conversation</TooltipContent>
+                      </Tooltip>
+
+                      <Tooltip>
+                        <TooltipTrigger asChild>
+                          <Button
+                            size="icon"
+                            variant="ghost"
+                            className="p-2 rounded-full hover:bg-gray-100 transition-colors"
+                            onClick={handleReply}
+                            disabled={isReplying}
+                          >
+                            <Reply className="h-5 w-5 text-gray-400" />
+                          </Button>
+                        </TooltipTrigger>
+                        <TooltipContent>Reply</TooltipContent>
+                      </Tooltip>
+
+                      <Tooltip>
+                        <TooltipTrigger asChild>
+                          <Button
+                            size="icon"
+                            variant="ghost"
+                            className="p-2 rounded-full hover:bg-gray-100 transition-colors"
+                          >
+                            <MoreVertical className="h-5 w-5 text-gray-400" />
+                          </Button>
+                        </TooltipTrigger>
+                        <TooltipContent>More options</TooltipContent>
+                      </Tooltip>
+                    </div>
+                  </div>
+                </div>
+
+                {/* Message Body */}
+                <div className="px-6 pb-6">
+                  <EmailBodyFormatter body={latestMail.body} />
+
+                  {/* Attachments */}
+                  {latestMail.attachments &&
+                    latestMail.attachments.length > 0 && (
+                      <div className="mt-6 p-4 bg-gray-50 rounded-lg border border-gray-200">
+                        <div className="text-sm font-medium text-gray-700 mb-3">
+                          {latestMail.attachments.length} attachment
+                          {latestMail.attachments.length > 1 ? 's' : ''}
+                        </div>
+                        <RenderAttachments
+                          attachments={latestMail.attachments}
+                        />
+                      </div>
+                    )}
+
+                  {/* Blockchain info */}
+                  {latestMail.digest && (
+                    <div className="mt-6 p-4 bg-blue-50 rounded-lg border border-blue-200">
+                      <div className="flex items-center justify-between">
+                        <div className="text-sm">
+                          <div className="font-medium text-blue-900 mb-1">
+                            Blockchain Verified
+                          </div>
+                          <div className="text-blue-700">
+                            Transaction:{' '}
+                            <code className="bg-blue-100 px-2 py-1 rounded text-xs">
+                              {latestMail.digest}
+                            </code>
+                          </div>
+                        </div>
+                        <Button
+                          onClick={handleClaimSui}
+                          size="sm"
+                          className="bg-blue-600 hover:bg-blue-700 text-white"
+                        >
+                          View on Explorer
+                        </Button>
+                      </div>
+                    </div>
+                  )}
+                </div>
+              </div>
+            )}
+          </div>
+        </div>
+
+        {/* Reply Area - Move outside scrollable content and remove sticky positioning */}
         {!isReplying && (
-          <div className="absolute bottom-0 left-0 right-0 p-4 border-t border-gray-200 bg-white">
-            <div className="flex items-center space-x-4">
-              <SimpleAvatar initials="ME" size="sm" />
-              <div
-                className="flex-1 rounded-md border border-gray-300 px-4 py-2 bg-white hover:bg-gray-50 cursor-pointer transition-colors"
-                onClick={handleQuickReply}
-              >
-                <input
-                  type="text"
-                  placeholder="Reply to this mail..."
-                  className="w-full bg-transparent border-none focus:outline-none text-sm pointer-events-none"
-                  readOnly
-                />
+          <div className="bg-white border-t border-gray-200 shadow-lg">
+            <div className="max-w-4xl mx-auto p-4">
+              <div className="flex items-center space-x-4">
+                <SimpleAvatar initials="ME" size="sm" />
+                <div
+                  className="flex-1 rounded-lg border border-gray-300 px-4 py-3 bg-white hover:bg-gray-50 cursor-pointer transition-colors shadow-sm"
+                  onClick={handleQuickReply}
+                >
+                  <div className="flex items-center justify-between">
+                    <span className="text-gray-500 text-sm">
+                      Click here to reply to {latestMail.sender.suimailNs}...
+                    </span>
+                    <Reply className="h-4 w-4 text-gray-400" />
+                  </div>
+                </div>
+                <div className="flex space-x-2">
+                  <Tooltip>
+                    <TooltipTrigger asChild>
+                      <Button
+                        size="icon"
+                        variant="outline"
+                        className="p-2 rounded-full hover:bg-gray-100 transition-colors"
+                        onClick={handleReply}
+                      >
+                        <Reply className="h-4 w-4 text-gray-400" />
+                      </Button>
+                    </TooltipTrigger>
+                    <TooltipContent>Reply</TooltipContent>
+                  </Tooltip>
+
+                  <Tooltip>
+                    <TooltipTrigger asChild>
+                      <Button
+                        size="icon"
+                        variant="outline"
+                        className="p-2 rounded-full hover:bg-gray-100 transition-colors"
+                      >
+                        <Forward className="h-4 w-4 text-gray-400" />
+                      </Button>
+                    </TooltipTrigger>
+                    <TooltipContent>Forward</TooltipContent>
+                  </Tooltip>
+                </div>
               </div>
-              <button
-                className="p-2 rounded-md bg-blue-500 text-white hover:bg-blue-600 transition-colors"
-                onClick={handleReply}
-              >
-                <Reply className="h-4 w-4" />
-              </button>
             </div>
           </div>
         )}
-      </div>
 
-      {/* Reply Composer Overlay */}
-      <ReplyComposer
-        originalEmail={mail}
-        // onSend={handleSendReply}
-        onCancel={handleCancelReply}
-        isVisible={isReplying}
-      />
+        {/* Reply Composer Overlay */}
+        {latestMail && (
+          <ReplyComposer
+            originalEmail={latestMail}
+            onSend={handleSend}
+            onCancel={handleCancelReply}
+            isVisible={isReplying}
+            isSending={isSending}
+          />
+        )}
+      </div>
     </div>
   )
 }
