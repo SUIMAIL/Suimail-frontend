@@ -31,12 +31,12 @@ export function FormSection({
   }, [suimailNS])
 
   const selectSampleSuimailNS = (sampleSuimailNS: string) => {
-    setSuimailNS(sampleSuimailNS)
+    setSuimailNS(sampleSuimailNS.toLowerCase())
   }
 
   const onSubmit = (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault()
-    handleSubmit({ suimailNS })
+    handleSubmit({ suimailNS: suimailNS.toLowerCase() })
   }
 
   return (
@@ -57,7 +57,7 @@ export function FormSection({
                   type="text"
                   placeholder="e.g. leadzid@suimailapp"
                   value={suimailNS}
-                  onChange={e => setSuimailNS(e.target.value)}
+                  onChange={e => setSuimailNS(e.target.value.toLowerCase())}
                   className="pr-10"
                   required
                 />
