@@ -15,6 +15,7 @@ import {
 } from './helpers/checkers'
 import prettyBytes from 'pretty-bytes'
 import { AxiosError } from 'axios'
+import mixpanel from '@/utils/mixpanel'
 
 interface ComposeMailValues {
   recipient: string
@@ -49,6 +50,9 @@ export default function ComposePage() {
             message: 'Failed to charge mail Transaction Fee',
             type: 'error',
           })
+          mixpanel.track('Send Mail Failure', {
+            reason: 'Failed to charge mail Transaction Fee',
+          })
           return
         }
       }
@@ -74,6 +78,9 @@ export default function ComposePage() {
             )}`,
             type: 'error',
           })
+          mixpanel.track('Send Mail Failure', {
+            reason: 'Invalid attachment size',
+          })
           return
         }
 
@@ -87,6 +94,9 @@ export default function ComposePage() {
             )}`,
             type: 'error',
           })
+          mixpanel.track('Send Mail Failure', {
+            reason: 'Total attachments size is too large',
+          })
           return
         }
       }
@@ -99,6 +109,11 @@ export default function ComposePage() {
             message: 'Mail sent successfully',
             type: 'success',
           })
+          mixpanel.track('Send Mail Success', {
+            has_attachments: !!data.attachments && data.attachments.length > 0,
+            attachment_count: data.attachments?.length || 0,
+            has_fee: data.requiredFee > 0,
+          })
           await queryClient.invalidateQueries({
             queryKey: ['outbox-mails'],
           })
@@ -110,12 +125,18 @@ export default function ComposePage() {
               message: error.response?.data.message,
               type: 'error',
             })
+            mixpanel.track('Send Mail Failure', {
+              reason: error.response?.data.message,
+            })
           }
         })
     } catch {
       setNotification({
         message: 'Failed to send mail',
         type: 'error',
+      })
+      mixpanel.track('Send Mail Failure', {
+        reason: 'Failed to send mail',
       })
     }
   }

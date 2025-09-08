@@ -13,6 +13,7 @@ import { useNavigate } from 'react-router-dom'
 import { setCookie } from '@/utils/helpers/auth'
 import { ACCESS_TOKEN_COOKIE_NAME } from '@/constants'
 import { useDisconnectWallet } from '@mysten/dapp-kit'
+import mixpanel from '@/utils/mixpanel'
 
 export function LogoutModal({
   open,
@@ -33,6 +34,8 @@ export function LogoutModal({
 
   const handleLogout = async () => {
     await disconnect().then(() => {
+      mixpanel.track('Logout Success')
+      mixpanel.reset()
       setCookie(ACCESS_TOKEN_COOKIE_NAME, '', new Date(0))
       navigate('/')
     })

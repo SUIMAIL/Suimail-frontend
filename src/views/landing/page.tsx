@@ -5,6 +5,7 @@ import { ConnectModal, useCurrentAccount } from '@mysten/dapp-kit'
 import { setCookie } from '@/utils/helpers/auth'
 import { useLoginMutation } from '../../hooks/auth'
 import { ACCESS_TOKEN_COOKIE_NAME } from '@/constants'
+import mixpanel from '@/utils/mixpanel'
 
 export default function LandingPage() {
   const navigate = useNavigate()
@@ -18,11 +19,17 @@ export default function LandingPage() {
       try {
         const response = await login(wallet.address)
         if (response.access_token) {
+          mixpanel.track('Login Success', {
+            wallet_address: wallet.address,
+          })
           setCookie(ACCESS_TOKEN_COOKIE_NAME, response.access_token)
           navigate('/mail/inbox')
         }
       } catch {
-        // Do nothing
+        mixpanel.track('Login Failed', {
+          wallet_address: wallet.address,
+          error_message: 'Login failed',
+        })
       }
     },
     [login, navigate]

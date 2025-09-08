@@ -6,6 +6,7 @@ import { useEffect, useMemo, useState } from 'react'
 import { Checkbox } from '../ui/checkbox'
 import { useQueryClient } from '@tanstack/react-query'
 import { generateRandomId } from '@/utils/helpers'
+import mixpanel from '@/utils/mixpanel'
 
 interface EmailTabProps {
   mail: IEmail
@@ -109,6 +110,11 @@ export function EmailTab({
     setMailIsRead(true)
 
     updateMailReadStatus()
+
+    mixpanel.track('Go To Mail', {
+      mail_id: mail.id,
+      path: isInboxPage ? 'inbox' : 'sent',
+    })
 
     navigate(`/mail/${isInboxPage ? 'inbox' : 'sent'}/${mail.id}`)
   }
