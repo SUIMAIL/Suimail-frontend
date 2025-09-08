@@ -50,6 +50,7 @@
     "date-fns": "^4.1.0",
     "jwt-decode": "^4.0.0",
     "lucide-react": "^0.511.0",
+    "mixpanel-browser": "^2.70.0",
     "motion": "^12.12.1",
     "pretty-bytes": "^7.0.1",
     "qrcode": "^1.5.4",
@@ -66,6 +67,7 @@
   },
   "devDependencies": {
     "@eslint/js": "^9.25.0",
+    "@types/mixpanel-browser": "^2.66.0",
     "@types/node": "^22.15.18",
     "@types/qrcode": "^1.5.5",
     "@types/react": "^19.1.2",

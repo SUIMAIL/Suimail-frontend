@@ -4,9 +4,9 @@ import type { IAttachmentType } from './attachment'
 export interface IUser {
   address: string
   suimailNs?: string
-  mailFee: number
-  whitelist: string[]
-  blacklist: string[]
+  mailFee?: number
+  whitelist?: string[]
+  blacklist?: string[]
   imageUrl?: string
 }
 
