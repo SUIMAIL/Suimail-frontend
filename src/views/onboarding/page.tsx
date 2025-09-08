@@ -8,6 +8,7 @@ import { MailBoardPageLayout } from '@/components/layouts'
 import { ConfirmSuimailNSModal } from './components/ConfirmSuimailNSModal'
 import { AxiosError } from 'axios'
 import { isValidSuimailAddress } from '@/utils/helpers'
+import mixpanel from '@/utils/mixpanel'
 
 export default function OnboardingPage() {
   const queryClient = useQueryClient()
@@ -58,6 +59,9 @@ export default function OnboardingPage() {
 
     try {
       await setUserSuimailNs(suimailNS).then(async () => {
+        mixpanel.track('Onboarding Success', {
+          suimail_ns: suimailNS,
+        })
         setNotification({
           message: 'Onboarded Successfully 🎉',
           type: 'success',
@@ -73,11 +77,19 @@ export default function OnboardingPage() {
             message: 'SuiMail NS already exists',
             type: 'error',
           })
+          mixpanel.track('Onboarding Failed', {
+            suimail_ns: suimailNS,
+            error_message: 'SuiMail NS already exists',
+          })
         }
       } else {
         setNotification({
           message: 'Failed to Onboard',
           type: 'error',
+        })
+        mixpanel.track('Onboarding Failed', {
+          suimail_ns: suimailNS,
+          error_message: 'Failed to Onboard',
         })
       }
     }

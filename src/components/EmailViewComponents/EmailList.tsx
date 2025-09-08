@@ -11,6 +11,7 @@ import { useMemo } from 'react'
 import { sortEmailsByLatest } from '@/utils/helpers'
 import { useQueryClient } from '@tanstack/react-query'
 import { useLocation } from 'react-router-dom'
+import mixpanel from '@/utils/mixpanel'
 
 interface EmailListProps {
   mails: IEmail[]
@@ -21,7 +22,6 @@ export function EmailList({ mails, refetch }: EmailListProps) {
   // Add defensive check for mails prop
   const safeMails = useMemo(() => {
     if (!mails || !Array.isArray(mails)) {
-      console.warn('EmailList: mails prop is not an array:', mails)
       return []
     }
     return mails
@@ -81,6 +81,9 @@ export function EmailList({ mails, refetch }: EmailListProps) {
       await markMailsAsRead({
         mailIds,
       }).then(() => {
+        mixpanel.track('Mark Mail As Read Success', {
+          mail_ids: mailIds,
+        })
         setNotification({
           message,
           type: 'success',
@@ -90,6 +93,10 @@ export function EmailList({ mails, refetch }: EmailListProps) {
         })
       })
     } catch {
+      mixpanel.track('Mark Mail As Read Failure', {
+        mail_ids: mailIds,
+        error_message: 'Failed to mark emails as read',
+      })
       setNotification({
         message: 'Failed to mark emails as read',
         type: 'error',
@@ -118,6 +125,10 @@ export function EmailList({ mails, refetch }: EmailListProps) {
           mailIds,
           path: isInboxPage ? 'recipient' : 'sender',
         }).then(() => {
+          mixpanel.track('Delete Mail Success', {
+            mail_ids: mailIds,
+            path: isInboxPage ? 'recipient' : 'sender',
+          })
           setNotification({
             message,
             type: 'success',
@@ -127,6 +138,11 @@ export function EmailList({ mails, refetch }: EmailListProps) {
           })
         })
       } catch {
+        mixpanel.track('Delete Mail Failure', {
+          mail_ids: mailIds,
+          path: isInboxPage ? 'recipient' : 'sender',
+          error_message: 'Failed to delete mails',
+        })
         setNotification({
           message: 'Failed to delete mails',
           type: 'error',

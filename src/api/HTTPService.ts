@@ -1,5 +1,6 @@
 import { ACCESS_TOKEN_COOKIE_NAME } from '@/constants'
 import { getCookie, setCookie } from '@/utils/helpers/auth'
+import mixpanel from '@/utils/mixpanel'
 import axios, {
   AxiosError,
   type AxiosInstance,
@@ -50,6 +51,7 @@ class HTTPService {
   private handleError = (error: AxiosError) => {
     const isUnAuthenticated = error.response?.status === 401
     if (isUnAuthenticated && window.location.pathname !== '/') {
+      mixpanel.reset()
       setCookie(ACCESS_TOKEN_COOKIE_NAME, '', new Date(0))
       window.location.href = '/'
       return

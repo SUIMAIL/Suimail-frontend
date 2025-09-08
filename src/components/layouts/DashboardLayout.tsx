@@ -6,6 +6,7 @@ import { ACCESS_TOKEN_COOKIE_NAME } from '@/constants'
 import { useGetAuthUserQuery } from '@/hooks/auth'
 import { SidebarProvider } from '../ui/sidebar'
 import { LogoutModalProvider } from '../LogoutModal'
+import { identifyUser } from '@/utils/mixpanel'
 
 const DashboardLayout = () => {
   const navigate = useNavigate()
@@ -24,6 +25,8 @@ const DashboardLayout = () => {
         return
       }
 
+      if (user) identifyUser(user)
+
       if (user?.suimailNs) {
         if (isOnboardingPage) {
           navigate('/mail/inbox')
@@ -38,7 +41,7 @@ const DashboardLayout = () => {
     } catch {
       navigate('/')
     }
-  }, [user?.suimailNs, navigate, isOnboardingPage, isFetching])
+  }, [user, navigate, isOnboardingPage, isFetching])
 
   useEffect(() => {
     handleAuthFlow()
