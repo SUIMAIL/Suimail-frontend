@@ -24,6 +24,7 @@ export interface IEmail {
   readAt?: string
   createdAt: string
   digest?: string
+  parentMailId?: string
   metadata?: {
     sender: {
       identifier: string
