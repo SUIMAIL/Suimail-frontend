@@ -48,7 +48,9 @@ export default function OnboardingPage() {
   }
 
   const handleSubmit = async () => {
-    if (!isValidSuimailAddress(suimailNS)) {
+    const formattedSuimailNS = suimailNS.toLowerCase()
+
+    if (!isValidSuimailAddress(formattedSuimailNS)) {
       setNotification({
         message: 'Invalid SuiMail NS',
         description: 'Please enter a valid SuiMail NS',
@@ -58,9 +60,9 @@ export default function OnboardingPage() {
     }
 
     try {
-      await setUserSuimailNs(suimailNS).then(async () => {
+      await setUserSuimailNs(formattedSuimailNS).then(async () => {
         mixpanel.track('Onboarding Success', {
-          suimail_ns: suimailNS,
+          suimail_ns: formattedSuimailNS,
         })
         setNotification({
           message: 'Onboarded Successfully 🎉',
@@ -78,7 +80,7 @@ export default function OnboardingPage() {
             type: 'error',
           })
           mixpanel.track('Onboarding Failed', {
-            suimail_ns: suimailNS,
+            suimail_ns: formattedSuimailNS,
             error_message: 'SuiMail NS already exists',
           })
         }
@@ -88,7 +90,7 @@ export default function OnboardingPage() {
           type: 'error',
         })
         mixpanel.track('Onboarding Failed', {
-          suimail_ns: suimailNS,
+          suimail_ns: formattedSuimailNS,
           error_message: 'Failed to Onboard',
         })
       }
