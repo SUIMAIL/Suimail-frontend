@@ -1,3 +1,5 @@
+'use client'
+
 import {
   AlertDialog,
   AlertDialogAction,
@@ -13,27 +15,27 @@ import { AlertCircle, Mail } from 'lucide-react'
 interface ConfirmSuimailNSModalProps {
   showConfirmDialog: boolean
   setShowConfirmDialog: (showConfirmDialog: boolean) => void
-  suimailNS: string
+  subname: string
   handleOnConfirmSubmit: () => void
 }
 
 export function ConfirmSuimailNSModal({
   showConfirmDialog,
   setShowConfirmDialog,
-  suimailNS,
+  subname,
   handleOnConfirmSubmit,
 }: ConfirmSuimailNSModalProps) {
   return (
     <AlertDialog open={showConfirmDialog} onOpenChange={setShowConfirmDialog}>
       <AlertDialogContent>
         <AlertDialogHeader>
-          <AlertDialogTitle>Confirm Your SuiMail NS</AlertDialogTitle>
+          <AlertDialogTitle>Confirm Your Subname</AlertDialogTitle>
           <AlertDialogDescription asChild>
             <div className="pt-2 space-y-4">
-              <div>You are about to set your SuiMail NS:</div>
+              <div>You are about to register your subname:</div>
               <div className="flex items-center justify-center bg-muted/50 p-3 rounded-md">
                 <Mail className="h-5 w-5 text-primary mr-2" />
-                <span className="font-medium">{suimailNS}</span>
+                <span className="font-medium">{subname}</span>
               </div>
               <div className="bg-amber-50 border border-amber-200 rounded-md p-3 text-amber-800">
                 <div className="flex items-start">
@@ -41,7 +43,7 @@ export function ConfirmSuimailNSModal({
                   <div>
                     <div className="font-medium">Important:</div>
                     <div className="text-sm mt-1">
-                      Once set, your SuiMail NS{' '}
+                      Once registered, your subname{' '}
                       <strong>cannot be changed</strong> due to the
                       decentralized nature of the Sui blockchain.
                     </div>

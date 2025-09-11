@@ -8,7 +8,7 @@ import type { AxiosError } from 'axios'
 
 export const useSetUserSuimailNsMutation = () => {
   return useMutation({
-    mutationFn: async (suimailNs: string) => {
+    mutationFn: async ({ suimailNs }: { suimailNs: string }) => {
       return await httpService.post('/user/suimailns', { suimailNs })
     },
   })

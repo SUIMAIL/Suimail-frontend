@@ -1,99 +1,130 @@
-import { useState } from 'react'
-import { motion } from 'motion/react'
+'use client'
+
+import { useState, useEffect } from 'react'
+import { motion } from 'framer-motion'
+import { useCurrentWallet } from '@mysten/dapp-kit'
+import { SuinsClient, SuinsTransaction } from '@mysten/suins'
+import { SuiClient, getFullnodeUrl } from '@mysten/sui/client'
+import { Transaction } from '@mysten/sui/transactions'
+import { Ed25519Keypair } from '@mysten/sui/keypairs/ed25519'
+import { isValidSuiAddress } from '@mysten/sui/utils'
 import { useQueryClient } from '@tanstack/react-query'
+
 import { FormSection } from './components/FormSection'
 import { useToastContext } from '@/components/ui/toast'
+import { ConfirmSuimailNSModal } from './components/ConfirmSuimailNSModal'
+import { useAppContext } from '@/utils/contexts/AppContext/AppContext'
 import { useSetUserSuimailNsMutation } from '@/hooks/user'
 import { MailBoardPageLayout } from '@/components/layouts'
-import { ConfirmSuimailNSModal } from './components/ConfirmSuimailNSModal'
-import { AxiosError } from 'axios'
-import { isValidSuimailAddress } from '@/utils/helpers'
-import mixpanel from '@/utils/mixpanel'
 
-export default function OnboardingPage() {
+const rpcUrl = getFullnodeUrl('testnet')
+const client = new SuiClient({ url: rpcUrl })
+
+if (!import.meta.env.VITE_PRIVATE_KEY) {
+  throw new Error('Missing VITE_PRIVATE_KEY in environment variables')
+}
+
+const keypair = Ed25519Keypair.fromSecretKey(import.meta.env.VITE_PRIVATE_KEY)
+const suinsClient = new SuinsClient({ client, network: 'testnet' })
+const PARENT_NFT_ID = import.meta.env.VITE_PARENT_NFT_ID || ''
+
+const createLeafSubname = async (
+  name: string,
+  parentNftId: string,
+  targetAddress: string
+) => {
+  const transaction = new Transaction()
+  const suinsTransaction = new SuinsTransaction(suinsClient, transaction)
+
+  suinsTransaction.createLeafSubName({
+    parentNft: parentNftId,
+    name,
+    targetAddress,
+  })
+
+  await client.signAndExecuteTransaction({
+    signer: keypair,
+    transaction: suinsTransaction.transaction,
+    options: {
+      showBalanceChanges: true,
+      showEvents: true,
+      showEffects: true,
+      showObjectChanges: true,
+    },
+  })
+}
+
+export default function SubnameManagerPage() {
+  const { setSubname } = useAppContext()
   const queryClient = useQueryClient()
-  const [suimailNS, setSuimailNS] = useState('')
-
+  const [subname, setSubnameState] = useState('')
   const [showConfirmDialog, setShowConfirmDialog] = useState(false)
-
+  const [isProcessing, setIsProcessing] = useState(false)
+  const [walletAddress, setWalletAddress] = useState('')
   const { setNotification } = useToastContext()
+  const { currentWallet, connectionStatus } = useCurrentWallet()
 
   const { mutateAsync: setUserSuimailNs, isPending: isSettingUpSuimailNs } =
     useSetUserSuimailNsMutation()
 
-  const copyToClipboard = (mailMessage: string) => {
-    navigator.clipboard.writeText(mailMessage)
+  useEffect(() => {
+    if (
+      connectionStatus === 'connected' &&
+      currentWallet?.accounts?.[0]?.address
+    ) {
+      setWalletAddress(currentWallet.accounts[0].address)
+    }
+  }, [currentWallet, connectionStatus])
+
+  const copyToClipboard = (name: string) => {
+    navigator.clipboard.writeText(name)
     setNotification({
-      message: 'Mail copied to clipboard',
+      message: 'Name copied to clipboard',
       type: 'success',
     })
   }
 
-  const handleOnSendBeforeSubmit = async ({
-    suimailNS,
-  }: {
-    suimailNS: string
-  }) => {
-    if (!isValidSuimailAddress(suimailNS)) {
+  const handleOnSendBeforeSubmit = async ({ name }: { name: string }) => {
+    if (!name) {
       setNotification({
-        message: 'Invalid SuiMail NS',
-        description: 'Please enter a valid SuiMail NS',
+        message: 'Please enter a subname',
         type: 'error',
       })
       return
     }
 
     setShowConfirmDialog(true)
-    setSuimailNS(suimailNS)
+    setSubnameState(name)
   }
 
   const handleSubmit = async () => {
-    const formattedSuimailNS = suimailNS.toLowerCase()
-
-    if (!isValidSuimailAddress(formattedSuimailNS)) {
-      setNotification({
-        message: 'Invalid SuiMail NS',
-        description: 'Please enter a valid SuiMail NS',
-        type: 'error',
-      })
+    if (!walletAddress || !isValidSuiAddress(walletAddress)) {
+      setNotification({ message: 'Invalid wallet address', type: 'error' })
       return
     }
 
+    setIsProcessing(true)
+    setShowConfirmDialog(false)
+
     try {
-      await setUserSuimailNs(formattedSuimailNS).then(async () => {
-        mixpanel.track('Onboarding Success', {
-          suimail_ns: formattedSuimailNS,
-        })
-        setNotification({
-          message: 'Onboarded Successfully 🎉',
-          type: 'success',
-        })
-        await queryClient.invalidateQueries({
-          queryKey: ['auth-user'],
-        })
+      console.log('→ Creating subname on Suins...')
+      await createLeafSubname(subname, PARENT_NFT_ID, walletAddress)
+      console.log('✅ Subname registered on Suins')
+
+      console.log('→ Registering on backend...')
+      await setUserSuimailNs({
+        suimailNs: subname,
       })
+      console.log('✅ Registered on backend')
+
+      setSubname(subname)
+      await queryClient.invalidateQueries({ queryKey: ['auth-user'] })
+      setNotification({ message: 'Onboarded Successfully 🎉', type: 'success' })
     } catch (error) {
-      if (error instanceof AxiosError) {
-        if (error.response?.status === 409) {
-          setNotification({
-            message: 'SuiMail NS already exists',
-            type: 'error',
-          })
-          mixpanel.track('Onboarding Failed', {
-            suimail_ns: formattedSuimailNS,
-            error_message: 'SuiMail NS already exists',
-          })
-        }
-      } else {
-        setNotification({
-          message: 'Failed to Onboard',
-          type: 'error',
-        })
-        mixpanel.track('Onboarding Failed', {
-          suimail_ns: formattedSuimailNS,
-          error_message: 'Failed to Onboard',
-        })
-      }
+      console.error('Registration error:', error)
+      setNotification({ message: 'Failed to Onboard', type: 'error' })
+    } finally {
+      setIsProcessing(false)
     }
   }
 
@@ -101,58 +132,31 @@ export default function OnboardingPage() {
     <MailBoardPageLayout>
       <div className="min-h-screen flex flex-col items-center justify-center bg-gradient-to-b from-background to-secondary/20 px-4 py-0 sm:py-4">
         <motion.div
-          initial={{
-            opacity: 0,
-            y: 20,
-          }}
-          animate={{
-            opacity: 1,
-            y: 0,
-          }}
-          transition={{
-            duration: 0.5,
-          }}
+          initial={{ opacity: 0, y: 20 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ duration: 0.5 }}
           className="w-full max-w-md"
         >
           <div className="text-center mb-8">
             <motion.div
-              initial={{
-                scale: 0.8,
-                opacity: 0,
-              }}
-              animate={{
-                scale: 1,
-                opacity: 1,
-              }}
-              transition={{
-                delay: 0.2,
-                type: 'spring',
-                stiffness: 100,
-              }}
+              initial={{ scale: 0.8, opacity: 0 }}
+              animate={{ scale: 1, opacity: 1 }}
+              transition={{ delay: 0.2, type: 'spring', stiffness: 100 }}
               className="inline-flex items-center justify-center mb-4"
-            >
-              <div className="relative">
-                <img
-                  src="/images/suimail-logo.png"
-                  alt="Suimail"
-                  className="w-[150px] h-auto"
-                />
-              </div>
-            </motion.div>
-
+            />
             <motion.p
               initial={{ opacity: 0 }}
               animate={{ opacity: 1 }}
               transition={{ delay: 0.4 }}
               className="text-muted-foreground"
             >
-              Your Decentralized Email on the Sui Blockchain
+              Register your Subname on SuiMail
             </motion.p>
           </div>
 
           <FormSection
             handleSubmit={handleOnSendBeforeSubmit}
-            isSettingUpSuimailNs={isSettingUpSuimailNs}
+            isProcessing={isProcessing || isSettingUpSuimailNs}
             copyToClipboard={copyToClipboard}
           />
 
@@ -197,7 +201,7 @@ export default function OnboardingPage() {
       <ConfirmSuimailNSModal
         showConfirmDialog={showConfirmDialog}
         setShowConfirmDialog={setShowConfirmDialog}
-        suimailNS={suimailNS}
+        subname={subname}
         handleOnConfirmSubmit={handleSubmit}
       />
     </MailBoardPageLayout>
