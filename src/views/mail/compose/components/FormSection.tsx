@@ -251,8 +251,11 @@ export function FormSection({ onSubmit, isLoading }: FormSectionProps) {
         placeholder="Write your message here..."
         error={errors.message?.message}
         register={register}
+        setValue={setValue}
+        watch={watch}
         required
         rows={12}
+        useRichEditor={true}
       />
 
       <div className="space-y-2">
