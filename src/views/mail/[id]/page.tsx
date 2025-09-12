@@ -6,7 +6,6 @@ import {
   Trash2,
   Reply,
   Loader2,
-  ExternalLink,
   ChevronDown,
   ChevronRight,
   MoreVertical,
@@ -29,119 +28,10 @@ import { useToastContext } from '@/components/ui/toast'
 import { useQueryClient } from '@tanstack/react-query'
 import { TooltipContent, TooltipTrigger } from '@/components/ui/tooltip'
 import { Tooltip } from '@/components/ui/tooltip'
-import { ReplyComposer } from './reply'
+import { ReplyComposer } from '@/views/mail/[id]/reply'
 import RenderAttachments from './components/RenderAttachments'
+import { EmailBodyFormatter } from './email-format'
 
-// Enhanced email body formatter component
-const EmailBodyFormatter = ({
-  body,
-  isQuoted = false,
-}: {
-  body: string
-  isQuoted?: boolean
-}) => {
-  const formatEmailBody = (text: string) => {
-    // Split by paragraphs first
-    const paragraphs = text.split('\n\n').filter(p => p.trim())
-
-    return paragraphs.map((paragraph, pIndex) => {
-      // Handle each line within the paragraph
-      const lines = paragraph.split('\n')
-
-      return (
-        <div
-          key={pIndex}
-          className={`mb-4 ${isQuoted ? 'text-gray-600' : 'text-gray-900'}`}
-        >
-          {lines.map((line, lIndex) => {
-            // Check if line is a quote (starts with >)
-            if (line.trim().startsWith('>')) {
-              return (
-                <div
-                  key={lIndex}
-                  className="border-l-3 border-gray-300 pl-3 ml-2 mb-2"
-                >
-                  <span className="text-gray-600 italic">
-                    {formatTextWithLinks(line.replace(/^>\s*/, ''))}
-                  </span>
-                </div>
-              )
-            }
-
-            // Check if line is a header (email signature style)
-            if (line.match(/^(From|To|Subject|Date|Sent):\s/i)) {
-              return (
-                <div
-                  key={lIndex}
-                  className="text-sm text-gray-500 font-medium mb-1"
-                >
-                  {formatTextWithLinks(line)}
-                </div>
-              )
-            }
-
-            // Regular paragraph line
-            return (
-              <div
-                key={lIndex}
-                className={`leading-relaxed ${lIndex > 0 ? 'mt-1' : ''}`}
-              >
-                {formatTextWithLinks(line)}
-              </div>
-            )
-          })}
-        </div>
-      )
-    })
-  }
-
-  const formatTextWithLinks = (text: string) => {
-    // Enhanced URL regex to catch more patterns
-    const urlRegex =
-      /(https?:\/\/[^\s<>"{}|\\^`[\]]+[^\s<>"{}|\\^`[\].,;:])|(\b[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}\b)/g
-
-    const parts = text.split(urlRegex)
-
-    return parts.map((part, index) => {
-      if (!part) return null
-
-      // Check if it's a URL
-      if (part.match(/^https?:\/\//)) {
-        return (
-          <a
-            key={index}
-            href={part}
-            target="_blank"
-            rel="noopener noreferrer"
-            className="text-blue-600 hover:text-blue-800 hover:underline inline-flex items-center"
-          >
-            {part.length > 50 ? `${part.substring(0, 47)}...` : part}
-            <ExternalLink className="h-3 w-3 ml-1 opacity-70" />
-          </a>
-        )
-      }
-
-      // Check if it's an email
-      if (part.match(/^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}$/)) {
-        return (
-          <a
-            key={index}
-            href={`mailto:${part}`}
-            className="text-blue-600 hover:text-blue-800 hover:underline"
-          >
-            {part}
-          </a>
-        )
-      }
-
-      return <span key={index}>{part}</span>
-    })
-  }
-
-  return <div className="max-w-none">{formatEmailBody(body)}</div>
-}
-
-// Gmail-style quoted message component
 const QuotedMessage = ({
   email,
   isExpanded,
@@ -197,7 +87,8 @@ const QuotedMessage = ({
             </div>
             {!isExpanded && (
               <div className="text-xs text-gray-500 truncate mt-1">
-                {email.body.substring(0, 100)}...
+                {/* Strip HTML tags for preview */}
+                {email.body.replace(/<[^>]*>/g, '').substring(0, 100)}...
               </div>
             )}
           </div>

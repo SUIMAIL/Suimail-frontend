@@ -1,6 +1,7 @@
 import { useState, useEffect, useRef } from 'react'
-import { X, Send, Loader2 } from 'lucide-react'
+import { X, Send, Loader2, ChevronDown } from 'lucide-react'
 import { Button } from '@/components/ui/button'
+import { Editor } from '@tinymce/tinymce-react'
 import type { IEmail } from '@/types/generic'
 
 interface ReplyComposerProps {
@@ -26,26 +27,25 @@ export function ReplyComposer({
 }: ReplyComposerProps) {
   const [replyBody, setReplyBody] = useState('')
   const [error, setError] = useState('')
-  const textareaRef = useRef<HTMLTextAreaElement>(null)
+  const [showQuotedMessage, setShowQuotedMessage] = useState(false)
+  const editorRef = useRef<any>(null)
 
   useEffect(() => {
-    if (isVisible && textareaRef.current) {
-      textareaRef.current.focus()
+    if (isVisible && editorRef.current) {
+      editorRef.current.focus()
     }
   }, [isVisible])
-
-  // Auto-resize textarea
-  useEffect(() => {
-    if (textareaRef.current) {
-      textareaRef.current.style.height = 'auto'
-      textareaRef.current.style.height = `${textareaRef.current.scrollHeight}px`
-    }
-  }, [replyBody])
 
   // Format date helper
   const formatDate = (dateString: string) => {
     const date = new Date(dateString)
-    return date.toLocaleDateString() + ' ' + date.toLocaleTimeString()
+    return date.toLocaleDateString('en-US', {
+      year: 'numeric',
+      month: 'short',
+      day: 'numeric',
+      hour: '2-digit',
+      minute: '2-digit',
+    })
   }
 
   // Generate reply subject (avoid double Re:)
@@ -54,12 +54,14 @@ export function ReplyComposer({
     : `Re: ${originalEmail.subject}`
 
   const handleSend = async () => {
-    // Basic client-side validation
-    if (!replyBody.trim()) {
+    const bodyText = editorRef.current?.getContent({ format: 'text' }) || ''
+    const bodyHtml = editorRef.current?.getContent() || ''
+
+    if (!bodyText.trim()) {
       setError('Please enter a message')
       return
     }
-    if (replyBody.trim().length > 10000) {
+    if (bodyText.trim().length > 10000) {
       setError('Message is too long (maximum 10,000 characters)')
       return
     }
@@ -69,11 +71,12 @@ export function ReplyComposer({
       await onSend({
         to: originalEmail.sender.suimailNs || '',
         subject: replySubject,
-        body: replyBody.trim(),
+        body: bodyHtml,
         inReplyTo: originalEmail.id,
         originalMessageId: originalEmail.id,
       })
       setReplyBody('')
+      editorRef.current?.setContent('')
     } catch (err) {
       const errorMessage =
         err instanceof Error
@@ -84,22 +87,11 @@ export function ReplyComposer({
     }
   }
 
-  const handleKeyDown = (e: React.KeyboardEvent) => {
-    // Send with Ctrl/Cmd + Enter
-    if ((e.ctrlKey || e.metaKey) && e.key === 'Enter' && !isSending) {
-      e.preventDefault()
-      handleSend()
-    }
-    // Cancel with Escape
-    if (e.key === 'Escape' && !isSending) {
-      onCancel()
-    }
-  }
-
   const handleCancel = () => {
     if (!isSending) {
       setReplyBody('')
       setError('')
+      editorRef.current?.setContent('')
       onCancel()
     }
   }
@@ -107,151 +99,153 @@ export function ReplyComposer({
   if (!isVisible) return null
 
   return (
-    <div className="absolute inset-0 bg-white border-l border-gray-200 shadow-md z-30 overflow-hidden">
-      {/* Header */}
-      <div className="sticky top-0 z-10 bg-white border-b border-gray-200">
-        <div className="flex items-center justify-between p-4">
-          <div className="flex items-center">
-            <Button
-              variant="ghost"
-              className="mr-4 p-2 hover:bg-gray-100 transition-colors"
-              onClick={handleCancel}
-              disabled={isSending}
-            >
-              <X className="h-5 w-5 text-gray-600" />
-            </Button>
-            <h2 className="text-lg font-medium text-gray-900">
-              Reply to {originalEmail.sender.suimailNs}
-            </h2>
-          </div>
-
+    <div className="absolute inset-0 bg-white border-l border-gray-200 shadow-lg z-30 flex flex-col">
+      {/* Simplified Header */}
+      <div className="flex items-center justify-between p-4 border-b border-gray-200 bg-gray-50">
+        <div className="flex items-center space-x-3">
           <Button
-            onClick={handleSend}
-            disabled={isSending || !replyBody.trim()}
-            className="bg-blue-500 hover:bg-blue-600 text-white disabled:opacity-50 disabled:cursor-not-allowed"
+            variant="ghost"
+            size="sm"
+            onClick={handleCancel}
+            disabled={isSending}
+            className="h-8 w-8 p-0 hover:bg-gray-200"
           >
-            {isSending ? (
-              <>
-                <Loader2 className="h-4 w-4 mr-2 animate-spin" />
-                Sending...
-              </>
-            ) : (
-              <>
-                <Send className="h-4 w-4 mr-2" />
-                Send
-              </>
-            )}
+            <X className="h-4 w-4" />
           </Button>
+          <div>
+            <h3 className="font-medium text-gray-900">Reply</h3>
+            <p className="text-sm text-gray-500">
+              to {originalEmail.sender.suimailNs}
+            </p>
+          </div>
         </div>
+
+        <Button
+          onClick={handleSend}
+          disabled={isSending || !replyBody.trim()}
+          size="sm"
+          className="bg-blue-600 hover:bg-blue-700"
+        >
+          {isSending ? (
+            <>
+              <Loader2 className="h-4 w-4 mr-2 animate-spin" />
+              Sending...
+            </>
+          ) : (
+            <>
+              <Send className="h-4 w-4 mr-2" />
+              Send
+            </>
+          )}
+        </Button>
       </div>
 
-      {/* Compose Form */}
-      <div
-        className="p-6 h-full overflow-y-auto"
-        style={{ height: 'calc(100vh - 80px)' }}
-      >
+      {/* Main Content */}
+      <div className="flex-1 flex flex-col overflow-hidden">
         {/* Error Message */}
         {error && (
-          <div className="mb-4 p-3 bg-red-50 border border-red-200 rounded-md">
+          <div className="mx-4 mt-4 p-3 bg-red-50 border border-red-200 rounded-md">
             <p className="text-sm text-red-600">{error}</p>
           </div>
         )}
 
-        {/* To Field */}
-        <div className="mb-4">
-          <label className="block text-sm font-medium text-gray-700 mb-2">
-            To
-          </label>
-          <input
-            type="text"
-            value={originalEmail.sender.suimailNs}
-            readOnly
-            className="w-full px-3 py-2 border border-gray-300 rounded-md bg-gray-50 text-gray-600"
-          />
-        </div>
-
-        {/* Subject Field */}
-        <div className="mb-4">
-          <label className="block text-sm font-medium text-gray-700 mb-2">
-            Subject
-          </label>
-          <input
-            type="text"
-            value={replySubject}
-            readOnly
-            className="w-full px-3 py-2 border border-gray-300 rounded-md bg-gray-50 text-gray-600"
-          />
-        </div>
-
-        {/* Message Body */}
-        <div className="mb-4">
-          <label className="block text-sm font-medium text-gray-700 mb-2">
-            Message
-          </label>
-          <textarea
-            ref={textareaRef}
-            value={replyBody}
-            onChange={e => setReplyBody(e.target.value)}
-            onKeyDown={handleKeyDown}
-            placeholder="Type your reply here..."
-            className="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-blue-500 focus:border-blue-500 resize-none min-h-[120px] disabled:opacity-50 disabled:cursor-not-allowed"
-            disabled={isSending}
-          />
-          <div className="flex justify-between items-center mt-2">
-            <p className="text-xs text-gray-500">
-              Press Ctrl+Enter to send, Escape to cancel
-            </p>
-            <p
-              className={`text-xs ${replyBody.length > 9000 ? 'text-red-500' : 'text-gray-400'}`}
-            >
-              {replyBody.length}/10,000 characters
-            </p>
-          </div>
-        </div>
-
-        {/* Original Message Preview */}
-        <div className="border-t border-gray-200 pt-4">
-          <details className="group">
-            <summary className="cursor-pointer text-sm font-medium text-gray-700 hover:text-gray-900 list-none">
-              <span className="inline-flex items-center">
-                <svg
-                  className="h-4 w-4 mr-2 transition-transform group-open:rotate-90"
-                  fill="none"
-                  stroke="currentColor"
-                  viewBox="0 0 24 24"
-                >
-                  <path
-                    strokeLinecap="round"
-                    strokeLinejoin="round"
-                    strokeWidth={2}
-                    d="M9 5l7 7-7 7"
-                  />
-                </svg>
-                Show quoted message
+        {/* Compose Area */}
+        <div className="flex-1 p-4 space-y-4 overflow-y-auto">
+          {/* To and Subject Fields - Simplified */}
+          <div className="space-y-3">
+            <div className="flex items-center space-x-2 text-sm">
+              <span className="text-gray-500 w-16">To:</span>
+              <span className="text-gray-900">
+                {originalEmail.sender.suimailNs}
               </span>
-            </summary>
-            <div className="mt-3 p-3 bg-gray-50 border-l-4 border-gray-300 rounded-r-md">
-              <div className="text-xs text-gray-600 mb-2">
-                <div>
-                  <strong>From:</strong> {originalEmail.sender.suimailNs}
-                </div>
-                <div>
-                  <strong>Date:</strong> {formatDate(originalEmail.createdAt)}
-                </div>
-                <div>
-                  <strong>Subject:</strong> {originalEmail.subject}
-                </div>
-              </div>
-              <div className="text-sm text-gray-700 whitespace-pre-wrap">
-                {originalEmail.body.split('\n').map((line, index) => (
-                  <div key={index} className="text-gray-600">
-                    <span className="text-gray-400 mr-2">{'>'}</span>
-                    {line}
-                  </div>
-                ))}
-              </div>
             </div>
-          </details>
+            <div className="flex items-center space-x-2 text-sm">
+              <span className="text-gray-500 w-16">Subject:</span>
+              <span className="text-gray-900">{replySubject}</span>
+            </div>
+          </div>
+
+          <div className="border-t border-gray-200 pt-4">
+            {/* Rich Text Editor */}
+            <div className="mb-4">
+              <Editor
+                onInit={(evt, editor) => (editorRef.current = editor)}
+                apiKey={import.meta.env.VITE_TINYMCE_API_KEY}
+                init={{
+                  height: 300,
+                  menubar: false,
+                  plugins: [
+                    'autolink',
+                    'lists',
+                    'link',
+                    'charmap',
+                    'anchor',
+                    'searchreplace',
+                    'visualblocks',
+                    'code',
+                    'fullscreen',
+                    'insertdatetime',
+                    'media',
+                    'table',
+                    'preview',
+                    'help',
+                    'wordcount',
+                  ],
+                  toolbar:
+                    'undo redo | blocks | bold italic underline | alignleft aligncenter alignright alignjustify | bullist numlist outdent indent | removeformat | help',
+                  content_style:
+                    'body { font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Oxygen, Ubuntu, Cantarell, "Open Sans", "Helvetica Neue", sans-serif; font-size: 14px }',
+                  branding: false,
+                  resize: false,
+                  statusbar: false,
+                  placeholder: 'Type your reply here...',
+                }}
+                onEditorChange={content => setReplyBody(content)}
+              />
+            </div>
+
+            {/* Keyboard Shortcuts Hint */}
+            <div className="text-xs text-gray-500 mb-4">
+              Press Ctrl+Enter to send • Esc to cancel
+            </div>
+
+            {/* Quoted Message Toggle */}
+            <div className="border-t border-gray-200 pt-4">
+              <Button
+                variant="ghost"
+                size="sm"
+                onClick={() => setShowQuotedMessage(!showQuotedMessage)}
+                className="text-gray-600 hover:text-gray-900 p-0 h-auto font-normal"
+              >
+                <ChevronDown
+                  className={`h-4 w-4 mr-2 transition-transform ${showQuotedMessage ? 'rotate-180' : ''}`}
+                />
+                {showQuotedMessage ? 'Hide' : 'Show'} quoted message
+              </Button>
+
+              {showQuotedMessage && (
+                <div className="mt-3 p-4 bg-gray-50 rounded-lg border border-gray-200">
+                  <div className="text-xs text-gray-600 space-y-1 mb-3">
+                    <div>
+                      <span className="font-medium">From:</span>{' '}
+                      {originalEmail.sender.suimailNs}
+                    </div>
+                    <div>
+                      <span className="font-medium">Date:</span>{' '}
+                      {formatDate(originalEmail.createdAt)}
+                    </div>
+                    <div>
+                      <span className="font-medium">Subject:</span>{' '}
+                      {originalEmail.subject}
+                    </div>
+                  </div>
+                  <div className="text-sm text-gray-700 whitespace-pre-wrap border-l-2 border-gray-300 pl-3">
+                    {originalEmail.body}
+                  </div>
+                </div>
+              )}
+            </div>
+          </div>
         </div>
       </div>
     </div>
