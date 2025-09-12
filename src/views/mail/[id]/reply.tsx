@@ -170,7 +170,7 @@ export function ReplyComposer({
             <div className="mb-4">
               <Editor
                 onInit={(evt, editor) => (editorRef.current = editor)}
-                apiKey="p1c813h59vb782y37f6bpto2sdq5ahef5odr908nox2ra45b"
+                apiKey={import.meta.env.VITE_TINYMCE_API_KEY}
                 init={{
                   height: 300,
                   menubar: false,
