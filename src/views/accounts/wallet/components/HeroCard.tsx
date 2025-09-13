@@ -9,8 +9,8 @@ import {
 } from '@/components/ui/card'
 import { Input } from '@/components/ui/input'
 import { CheckIcon, CopyIcon, RefreshCcw } from 'lucide-react'
-import { SendSuiModal } from '@/components/SendSuiModal'
-import { RecieveSuiModal } from '@/components/RecieveSuiModal'
+import { SendSuiModal } from '@/components/modals/SendSuiModal'
+import { ReceiveSuiModal } from '@/components/modals/ReceiveSuiModal'
 import { VisuallyHidden } from '@radix-ui/react-visually-hidden'
 import { useSuiClientQuery } from '@mysten/dapp-kit'
 import { MIST_PER_SUI } from '@/constants'
@@ -132,7 +132,7 @@ export function HeroCard({ accountAddress }: HeroCardProps) {
                 refetchBalance()
               }}
             />
-            <RecieveSuiModal currentAddress={accountAddress} />
+            <ReceiveSuiModal currentAddress={accountAddress} />
           </div>
         </div>
       </CardContent>

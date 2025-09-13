@@ -8,7 +8,7 @@ import {
   AlertDialogTrigger,
 } from '@/components/ui/alert-dialog'
 import { useState, createContext, useContext, useEffect } from 'react'
-import { Button } from './ui/button'
+import { Button } from '../ui/button'
 import { useNavigate } from 'react-router-dom'
 import { setCookie } from '@/utils/helpers/auth'
 import { ACCESS_TOKEN_COOKIE_NAME } from '@/constants'

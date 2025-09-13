@@ -1,10 +1,11 @@
 import { useEffect, useMemo, useState } from 'react'
 import { z } from 'zod'
+import type { Network } from '@mysten/suins'
 import { ACTIVE_RPC_NETWORK } from '@/utils/config/suiClient'
 import { isValidSuiAddress, MIST_PER_SUI } from '@mysten/sui/utils'
 import { useForm } from 'react-hook-form'
 import { zodResolver } from '@hookform/resolvers/zod'
-import { Button } from './ui/button'
+import { Button } from '../ui/button'
 import {
   AlertCircleIcon,
   ArrowUpRight,
@@ -23,11 +24,11 @@ import {
   AlertDialogHeader,
   AlertDialogTitle,
   AlertDialogTrigger,
-} from './ui/alert-dialog'
-import { Input } from './ui/input'
-import { Label } from './ui/label'
-import { Alert, AlertDescription, AlertTitle } from './ui/alert'
-import { useToastContext } from './ui/toast'
+} from '../ui/alert-dialog'
+import { Input } from '../ui/input'
+import { Label } from '../ui/label'
+import { Alert, AlertDescription, AlertTitle } from '../ui/alert'
+import { useToastContext } from '../ui/toast'
 import { useSendSuiTx } from '@/hooks/ptb/send-sui-tx'
 
 const MIN_AMOUNT = 0.00000000001
@@ -304,14 +305,11 @@ const SuiSentSection = ({
     }, 2000)
   }
 
-  const ACTIVE_NETWORK_EXPLORER_URL_MAP: Record<
-    typeof ACTIVE_RPC_NETWORK,
-    string
-  > = useMemo(
+  const ACTIVE_NETWORK_EXPLORER_URL_MAP: Record<Network, string> = useMemo(
     () => ({
       testnet: 'https://testnet.suivision.xyz/txblock/',
       mainnet: 'https://suiscan.xyz/tx/',
-      devnet: 'https://suiscan.xyz/tx/',
+      custom: 'https://suiscan.xyz/tx/',
     }),
     []
   )

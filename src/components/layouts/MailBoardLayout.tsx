@@ -5,7 +5,7 @@ import { useGetAuthUserQuery } from '@/hooks/auth'
 import { Loading } from '../Loading'
 import useMediaQuery from '@/hooks/useMediaQuery'
 import { useMemo } from 'react'
-import { LogoutModal, useLogoutModal } from '../LogoutModal'
+import { LogoutModal, useLogoutModal } from '../modals/LogoutModal'
 
 const MailBoardLayout = () => {
   const { data: user, isFetching } = useGetAuthUserQuery()
