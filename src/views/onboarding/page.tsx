@@ -1,100 +1,38 @@
-'use client'
-
 import { useState, useEffect } from 'react'
 import { motion } from 'framer-motion'
-import { useCurrentWallet } from '@mysten/dapp-kit'
-import { SuinsClient, SuinsTransaction } from '@mysten/suins'
-import { SuiClient, getFullnodeUrl } from '@mysten/sui/client'
-import { Transaction } from '@mysten/sui/transactions'
-import { Ed25519Keypair } from '@mysten/sui/keypairs/ed25519'
+import { useCurrentWallet, useCurrentAccount } from '@mysten/dapp-kit'
 import { isValidSuiAddress } from '@mysten/sui/utils'
 import { useQueryClient } from '@tanstack/react-query'
-
 import { FormSection } from './components/FormSection'
 import { useToastContext } from '@/components/ui/toast'
 import { ConfirmSuimailNSModal } from './components/ConfirmSuimailNSModal'
-import { useAppContext } from '@/utils/contexts/AppContext/AppContext'
-import { useSetUserSuimailNsMutation } from '@/hooks/user'
+import { useSetUserSuimailNsMutation } from '@/hooks/onboarding'
 import { MailBoardPageLayout } from '@/components/layouts'
+import mixpanel from '@/utils/mixpanel'
+import { AxiosError } from 'axios'
 
-const rpcUrl = getFullnodeUrl('testnet')
-const client = new SuiClient({ url: rpcUrl })
-
-if (!import.meta.env.VITE_PRIVATE_KEY) {
-  throw new Error('Missing VITE_PRIVATE_KEY in environment variables')
-}
-
-const keypair = Ed25519Keypair.fromSecretKey(import.meta.env.VITE_PRIVATE_KEY)
-const suinsClient = new SuinsClient({ client, network: 'testnet' })
-const PARENT_NFT_ID = import.meta.env.VITE_PARENT_NFT_ID || ''
-
-const createLeafSubname = async (
-  name: string,
-  parentNftId: string,
-  targetAddress: string
-) => {
-  const transaction = new Transaction()
-  const suinsTransaction = new SuinsTransaction(suinsClient, transaction)
-
-  suinsTransaction.createLeafSubName({
-    parentNft: parentNftId,
-    name,
-    targetAddress,
-  })
-
-  await client.signAndExecuteTransaction({
-    signer: keypair,
-    transaction: suinsTransaction.transaction,
-    options: {
-      showBalanceChanges: true,
-      showEvents: true,
-      showEffects: true,
-      showObjectChanges: true,
-    },
-  })
-}
-
-export default function SubnameManagerPage() {
-  const { setSubname } = useAppContext()
+export default function OnboardingPage() {
   const queryClient = useQueryClient()
-  const [subname, setSubnameState] = useState('')
+  const [suimailNs, setSuimailNs] = useState('')
   const [showConfirmDialog, setShowConfirmDialog] = useState(false)
   const [isProcessing, setIsProcessing] = useState(false)
   const [walletAddress, setWalletAddress] = useState('')
   const { setNotification } = useToastContext()
-  const { currentWallet, connectionStatus } = useCurrentWallet()
+  const { connectionStatus } = useCurrentWallet()
+  const currentAccount = useCurrentAccount()
 
   const { mutateAsync: setUserSuimailNs, isPending: isSettingUpSuimailNs } =
     useSetUserSuimailNsMutation()
 
   useEffect(() => {
-    if (
-      connectionStatus === 'connected' &&
-      currentWallet?.accounts?.[0]?.address
-    ) {
-      setWalletAddress(currentWallet.accounts[0].address)
+    if (connectionStatus === 'connected' && currentAccount?.address) {
+      setWalletAddress(currentAccount.address)
     }
-  }, [currentWallet, connectionStatus])
+  }, [currentAccount, connectionStatus])
 
-  const copyToClipboard = (name: string) => {
-    navigator.clipboard.writeText(name)
-    setNotification({
-      message: 'Name copied to clipboard',
-      type: 'success',
-    })
-  }
-
-  const handleOnSendBeforeSubmit = async ({ name }: { name: string }) => {
-    if (!name) {
-      setNotification({
-        message: 'Please enter a subname',
-        type: 'error',
-      })
-      return
-    }
-
+  const handleOnSendBeforeSubmit = async (_suimailNs: string) => {
     setShowConfirmDialog(true)
-    setSubnameState(name)
+    setSuimailNs(_suimailNs)
   }
 
   const handleSubmit = async () => {
@@ -107,22 +45,40 @@ export default function SubnameManagerPage() {
     setShowConfirmDialog(false)
 
     try {
-      console.log('→ Creating subname on Suins...')
-      await createLeafSubname(subname, PARENT_NFT_ID, walletAddress)
-      console.log('✅ Subname registered on Suins')
-
-      console.log('→ Registering on backend...')
-      await setUserSuimailNs({
-        suimailNs: subname,
+      // await createUserSuins(suimailNs, walletAddress)
+      setUserSuimailNs(suimailNs).then(() => {
+        mixpanel.track('Onboarding Success', {
+          suimail_ns: suimailNs,
+        })
+        queryClient.invalidateQueries({ queryKey: ['auth-me'] })
+        setNotification({
+          message: 'Onboarded Successfully 🎉',
+          type: 'success',
+        })
       })
-      console.log('✅ Registered on backend')
-
-      setSubname(subname)
-      await queryClient.invalidateQueries({ queryKey: ['auth-user'] })
-      setNotification({ message: 'Onboarded Successfully 🎉', type: 'success' })
     } catch (error) {
-      console.error('Registration error:', error)
-      setNotification({ message: 'Failed to Onboard', type: 'error' })
+      console.error(error)
+      if (error instanceof AxiosError) {
+        if (error.response?.status === 409) {
+          setNotification({
+            message: 'SuiMail NS already exists',
+            type: 'error',
+          })
+          mixpanel.track('Onboarding Failed', {
+            suimail_ns: suimailNs,
+            error_message: 'SuiMail NS already exists',
+          })
+        }
+      } else {
+        setNotification({
+          message: 'Failed to Onboard',
+          type: 'error',
+        })
+        mixpanel.track('Onboarding Failed', {
+          suimail_ns: suimailNs,
+          error_message: 'Failed to Onboard',
+        })
+      }
     } finally {
       setIsProcessing(false)
     }
@@ -143,21 +99,28 @@ export default function SubnameManagerPage() {
               animate={{ scale: 1, opacity: 1 }}
               transition={{ delay: 0.2, type: 'spring', stiffness: 100 }}
               className="inline-flex items-center justify-center mb-4"
-            />
+            >
+              <div className="relative">
+                <img
+                  src="/images/suimail-logo.png"
+                  alt="Suimail"
+                  className="w-[150px] h-auto"
+                />
+              </div>
+            </motion.div>
             <motion.p
               initial={{ opacity: 0 }}
               animate={{ opacity: 1 }}
               transition={{ delay: 0.4 }}
               className="text-muted-foreground"
             >
-              Register your Subname on SuiMail
+              Your Decentralized Email on the Sui Blockchain
             </motion.p>
           </div>
 
           <FormSection
             handleSubmit={handleOnSendBeforeSubmit}
             isProcessing={isProcessing || isSettingUpSuimailNs}
-            copyToClipboard={copyToClipboard}
           />
 
           <motion.p
@@ -201,7 +164,7 @@ export default function SubnameManagerPage() {
       <ConfirmSuimailNSModal
         showConfirmDialog={showConfirmDialog}
         setShowConfirmDialog={setShowConfirmDialog}
-        subname={subname}
+        suimailNs={suimailNs}
         handleOnConfirmSubmit={handleSubmit}
       />
     </MailBoardPageLayout>

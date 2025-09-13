@@ -21,7 +21,6 @@ import {
   Inbox,
   LogOut,
   Plus,
-  Repeat,
   SendHorizonal,
   Settings,
   Trash2,
@@ -78,11 +77,11 @@ const AccountNavigationItems: SidebarItem[] = [
     url: '/account/wallet',
     icon: <Wallet />,
   },
-  {
-    title: 'Subscription',
-    url: '/account/subscription',
-    icon: <Repeat />,
-  },
+  // {
+  //   title: 'Subscription',
+  //   url: '/account/subscription',
+  //   icon: <Repeat />,
+  // },
 ]
 
 const HelpNavigationItems: SidebarItem[] = [

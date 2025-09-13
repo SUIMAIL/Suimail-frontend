@@ -1,5 +1,5 @@
 export type SettingsViewType =
-  | 'subname'
+  | 'mailaddress'
   | 'notifications'
   | 'account'
   | 'preferences'

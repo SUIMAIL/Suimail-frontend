@@ -12,8 +12,9 @@ import { Button } from './ui/button'
 import { useNavigate } from 'react-router-dom'
 import { setCookie } from '@/utils/helpers/auth'
 import { ACCESS_TOKEN_COOKIE_NAME } from '@/constants'
-import { useDisconnectWallet } from '@mysten/dapp-kit'
+import { useCurrentAccount, useDisconnectWallet } from '@mysten/dapp-kit'
 import mixpanel from '@/utils/mixpanel'
+import { queryClient } from '@/query-client'
 
 export function LogoutModal({
   open,
@@ -24,6 +25,7 @@ export function LogoutModal({
 }) {
   const navigate = useNavigate()
 
+  const currentAccount = useCurrentAccount()
   const { mutateAsync: disconnect } = useDisconnectWallet()
 
   useEffect(() => {
@@ -33,12 +35,12 @@ export function LogoutModal({
   }, [open])
 
   const handleLogout = async () => {
-    await disconnect().then(() => {
-      mixpanel.track('Logout Success')
-      mixpanel.reset()
-      setCookie(ACCESS_TOKEN_COOKIE_NAME, '', new Date(0))
-      navigate('/')
-    })
+    if (currentAccount) await disconnect()
+    mixpanel.track('Logout Success')
+    mixpanel.reset()
+    queryClient.clear()
+    setCookie(ACCESS_TOKEN_COOKIE_NAME, '', new Date(0))
+    navigate('/')
   }
 
   return (

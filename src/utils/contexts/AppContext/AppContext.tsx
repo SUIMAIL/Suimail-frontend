@@ -9,8 +9,8 @@ export interface AppContextProps {
   setConnectionState: React.Dispatch<React.SetStateAction<string>>
   mailFee: number
   setMailFee: React.Dispatch<React.SetStateAction<number>>
-  subname: string
-  setSubname: React.Dispatch<React.SetStateAction<string>>
+  suimailNs: string
+  setSuimailNs: React.Dispatch<React.SetStateAction<string>>
 }
 
 export const AppContext = createContext<AppContextProps | undefined>(undefined)

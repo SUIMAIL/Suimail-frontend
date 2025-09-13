@@ -6,6 +6,8 @@ const suimailClientConfigSchema = z.object({
   ENOKI_API_KEY: z.string(),
   GOOGLE_CLIENT_ID: z.string(),
   PACKAGE_ID: z.string(),
+  PARENT_NFT_ID: z.string(),
+  SUIMAIL_PRIVATE_KEY: z.string(),
 })
 
 const suimailClientConfig = suimailClientConfigSchema.parse({
@@ -16,6 +18,8 @@ const suimailClientConfig = suimailClientConfigSchema.parse({
   ENOKI_API_KEY: import.meta.env.VITE_ENOKI_API_KEY!,
   GOOGLE_CLIENT_ID: import.meta.env.VITE_GOOGLE_CLIENT_ID!,
   PACKAGE_ID: import.meta.env.VITE_PACKAGE_ID!,
+  PARENT_NFT_ID: import.meta.env.VITE_PARENT_NFT_ID!,
+  SUIMAIL_PRIVATE_KEY: import.meta.env.VITE_SUIMAIL_PRIVATE_KEY!,
 })
 
 export { suimailClientConfig }

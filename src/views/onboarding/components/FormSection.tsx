@@ -1,71 +1,55 @@
-'use client'
-
 import type React from 'react'
 
-import { useMemo, useState, useEffect, useCallback } from 'react'
+import { useMemo, useState } from 'react'
 import { motion } from 'framer-motion'
 import { CheckCircle2, Copy, Mail, X } from 'lucide-react'
 import { cn } from '@/lib/utils'
 import { Label } from '@/components/ui/label'
 import { Input } from '@/components/ui/input'
 import { Button } from '@/components/ui/button'
-import { SuinsClient } from '@mysten/suins'
-import { SuiClient, getFullnodeUrl } from '@mysten/sui/client'
-
-const rpcUrl = getFullnodeUrl('testnet')
-const client = new SuiClient({ url: rpcUrl })
-const suinsClient = new SuinsClient({ client, network: 'testnet' })
+import { isValidSuimailAddress } from '@/utils/helpers'
+import { useToastContext } from '@/components/ui/toast'
+import { useCheckSuimailNsAvailabilityQuery } from '@/hooks/onboarding'
 
 interface FormSectionProps {
-  handleSubmit: ({ name }: { name: string }) => void
+  handleSubmit: (suimailNs: string) => void
   isProcessing: boolean
-  copyToClipboard: (name: string) => void
 }
 
-export function FormSection({
-  handleSubmit,
-  isProcessing,
-  copyToClipboard,
-}: FormSectionProps) {
-  const [name, setName] = useState('')
-  const [availability, setAvailability] = useState<
-    '' | 'checking' | 'available' | 'taken'
-  >('')
+const sampleAddresses = [
+  'aliceweb3@suimailapp',
+  'blockchain.dev@suimailapp',
+  'crypto.trader@suimailapp',
+]
 
-  const sampleNames = ['aliceweb3', 'blockchain.dev', 'crypto.trader']
+type Availability = '' | 'checking' | 'available' | 'taken' | 'invalid'
 
-  const fullName = `${name}`
+export function FormSection({ handleSubmit, isProcessing }: FormSectionProps) {
+  const [address, setAddress] = useState('')
 
-  const checkAvailability = useCallback(async () => {
-    if (!name) return setAvailability('')
-    setAvailability('checking')
-    try {
-      const record = await suinsClient.getNameRecord(fullName)
-      setAvailability(record ? 'taken' : 'available')
-    } catch {
-      setAvailability('available')
+  const { data: availabilityData, isLoading: isCheckingAvailability } =
+    useCheckSuimailNsAvailabilityQuery(address, {
+      enabled: isValidSuimailAddress(address),
+    })
+
+  const availability: Availability = useMemo(() => {
+    if (isCheckingAvailability) {
+      return 'checking'
     }
-  }, [name, fullName])
+    if (availabilityData?.available) {
+      return 'available'
+    }
+    return isValidSuimailAddress(address) ? 'taken' : ''
+  }, [isCheckingAvailability, availabilityData, address])
 
-  useEffect(() => {
-    const timeout = setTimeout(() => {
-      checkAvailability()
-    }, 500)
-    return () => clearTimeout(timeout)
-  }, [name, checkAvailability])
-
-  const isValid = useMemo(() => {
-    return name.length > 0 && availability === 'available'
-  }, [name, availability])
-
-  const selectSampleName = (sampleName: string) => {
-    setName(sampleName)
+  const handleAddressChange = (value: string) => {
+    setAddress(value)
   }
 
   const onSubmit = (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault()
     if (availability === 'available') {
-      handleSubmit({ name })
+      handleSubmit(address)
     }
   }
 
@@ -80,23 +64,23 @@ export function FormSection({
         <form onSubmit={onSubmit}>
           <div className="space-y-4">
             <div className="space-y-2">
-              <Label htmlFor="name">Subname</Label>
+              <Label htmlFor="name">SuiMail NS</Label>
               <div className="relative">
                 <Input
                   id="name"
                   type="text"
-                  placeholder="e.g. aliceweb3"
-                  value={name}
-                  onChange={e => setName(e.target.value)}
+                  placeholder="e.g. aliceweb3@suimailapp"
+                  value={address}
+                  onChange={e => handleAddressChange(e.target.value)}
                   className="pr-10"
                   required
                 />
-                {name && (
+                {address && (
                   <motion.button
                     initial={{ opacity: 0, scale: 0.8 }}
                     animate={{ opacity: 1, scale: 1 }}
                     type="button"
-                    onClick={() => setName('')}
+                    onClick={() => setAddress('')}
                     className="absolute right-3 top-[30%] -translate-y-1/2 text-muted-foreground hover:text-foreground"
                   >
                     <X className="h-4 w-4" />
@@ -110,12 +94,12 @@ export function FormSection({
               )}
               {availability === 'available' && (
                 <p className="text-sm text-green-600 mt-1">
-                  ✅ {fullName} is available
+                  ✅ {address} is available
                 </p>
               )}
               {availability === 'taken' && (
                 <p className="text-sm text-red-600 mt-1">
-                  ❌ {fullName} is already taken
+                  ❌ {address} is already taken
                 </p>
               )}
             </div>
@@ -127,10 +111,7 @@ export function FormSection({
               <Button
                 type="submit"
                 className="w-full bg-blue-500 hover:bg-blue-600"
-                disabled={isProcessing || !isValid}
-                style={{
-                  background: 'linear-gradient(to bottom, #006bf9, #00c1fa)',
-                }}
+                disabled={isProcessing || availability !== 'available'}
               >
                 {isProcessing ? (
                   <motion.div
@@ -159,59 +140,85 @@ export function FormSection({
               </span>
             </div>
           </div>
-          <div className="mt-4 space-y-2">
-            {sampleNames.map((sampleName, index) => (
-              <motion.div
-                key={sampleName}
-                initial={{ opacity: 0, x: -10 }}
-                animate={{ opacity: 1, x: 0 }}
-                transition={{ delay: 0.6 + index * 0.1 }}
-                whileHover={{
-                  scale: 1.01,
-                  backgroundColor: 'rgba(0,0,0,0.02)',
-                }}
-                className="flex items-center justify-between rounded-md border p-3 cursor-pointer"
-                onClick={() => selectSampleName(sampleName)}
-              >
-                <div className="flex items-center gap-2">
-                  <Mail className="h-4 w-4 text-muted-foreground" />
-                  <span
-                    className={cn(
-                      'text-sm',
-                      name === sampleName && 'font-medium text-primary'
-                    )}
-                  >
-                    {sampleName}
-                  </span>
-                </div>
-                <div className="flex items-center gap-2">
-                  {name === sampleName && (
-                    <motion.div
-                      initial={{ scale: 0 }}
-                      animate={{ scale: 1 }}
-                      className="text-primary"
-                    >
-                      <CheckCircle2 className="h-4 w-4" />
-                    </motion.div>
-                  )}
-                  <Button
-                    type="button"
-                    variant="ghost"
-                    size="icon"
-                    onClick={e => {
-                      e.stopPropagation()
-                      copyToClipboard(sampleName)
-                    }}
-                    className="h-8 w-8"
-                  >
-                    <Copy className="h-3.5 w-3.5" />
-                  </Button>
-                </div>
-              </motion.div>
-            ))}
-          </div>
+
+          <SampleAddressStack
+            address={address}
+            selectSampleAddress={setAddress}
+          />
         </div>
       </motion.div>
     </>
+  )
+}
+
+const SampleAddressStack = ({
+  address,
+  selectSampleAddress,
+}: {
+  address: string
+  selectSampleAddress: (sampleAddress: string) => void
+}) => {
+  const { setNotification } = useToastContext()
+
+  const copyToClipboard = (address: string) => {
+    navigator.clipboard.writeText(address)
+    setNotification({
+      message: 'Address copied to clipboard',
+      type: 'success',
+    })
+  }
+
+  return (
+    <div className="mt-4 space-y-2">
+      {sampleAddresses.map((sampleAddress, index) => (
+        <motion.div
+          key={sampleAddress}
+          initial={{ opacity: 0, x: -10 }}
+          animate={{ opacity: 1, x: 0 }}
+          transition={{ delay: 0.6 + index * 0.1 }}
+          whileHover={{
+            scale: 1.01,
+            backgroundColor: 'rgba(0,0,0,0.02)',
+          }}
+          className="flex items-center justify-between rounded-md border p-3 cursor-pointer"
+          onClick={() => selectSampleAddress(sampleAddress)}
+        >
+          <div className="flex items-center gap-2">
+            <Mail className="h-4 w-4 text-muted-foreground" />
+            <span
+              className={cn(
+                'text-sm',
+                address === sampleAddress && 'font-medium text-primary'
+              )}
+            >
+              {sampleAddress}
+            </span>
+          </div>
+          <div className="flex items-center gap-2">
+            {address === sampleAddress && (
+              <motion.div
+                initial={{ scale: 0 }}
+                animate={{ scale: 1 }}
+                className="text-primary"
+              >
+                <CheckCircle2 className="h-4 w-4" />
+              </motion.div>
+            )}
+            <Button
+              type="button"
+              variant="ghost"
+              size="icon"
+              onClick={e => {
+                e.stopPropagation()
+                copyToClipboard(sampleAddress)
+              }}
+              className="h-8 w-8"
+            >
+              <Copy className="h-3.5 w-3.5" />
+            </Button>
+          </div>
+        </motion.div>
+      ))}
+    </div>
   )
 }

@@ -51,6 +51,7 @@
     "date-fns": "^4.1.0",
     "html-react-parser": "^5.2.6",
     "jwt-decode": "^4.0.0",
+    "lodash": "^4.17.21",
     "lucide-react": "^0.511.0",
     "mixpanel-browser": "^2.70.0",
     "motion": "^12.12.1",
@@ -69,6 +70,7 @@
   },
   "devDependencies": {
     "@eslint/js": "^9.25.0",
+    "@types/lodash": "^4.17.20",
     "@types/mixpanel-browser": "^2.66.0",
     "@types/node": "^22.15.18",
     "@types/qrcode": "^1.5.5",
