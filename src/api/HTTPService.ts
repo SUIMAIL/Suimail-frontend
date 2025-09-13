@@ -6,6 +6,7 @@ import axios, {
   type AxiosInstance,
   type AxiosResponse,
 } from 'axios'
+import { queryClient } from '@/query-client'
 
 declare module 'axios' {
   // eslint-disable-next-line @typescript-eslint/no-empty-object-type, @typescript-eslint/no-explicit-any
@@ -48,11 +49,12 @@ class HTTPService {
 
   private handleResponse = (data: AxiosResponse) => data.data
 
-  private handleError = (error: AxiosError) => {
+  private handleError = async (error: AxiosError) => {
     const isUnAuthenticated = error.response?.status === 401
     if (isUnAuthenticated && window.location.pathname !== '/') {
       mixpanel.reset()
       setCookie(ACCESS_TOKEN_COOKIE_NAME, '', new Date(0))
+      queryClient.clear()
       window.location.href = '/'
       return
     }

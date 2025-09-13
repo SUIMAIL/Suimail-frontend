@@ -12,7 +12,7 @@ export function useLoginMutation() {
 
 export const useGetAuthUserQuery = () => {
   return useQuery({
-    queryKey: ['auth-user'],
+    queryKey: ['auth-me'],
     queryFn: async (): Promise<IUser> => {
       return await httpService.get('/auth/me')
     },

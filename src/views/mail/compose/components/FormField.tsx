@@ -20,11 +20,11 @@ interface FormFieldProps {
   setValue?: UseFormSetValue<ComposeFormData>
   watch?: UseFormWatch<ComposeFormData>
   rows?: number
-  disabled?: boolean
-  readonly?: boolean
   extendAction?: React.ReactNode
   onBlur?: (e: React.FocusEvent<HTMLInputElement | HTMLTextAreaElement>) => void
   useRichEditor?: boolean
+  disabled?: boolean
+  readonly?: boolean
 }
 
 export const FormField = ({
@@ -38,11 +38,11 @@ export const FormField = ({
   setValue,
   watch,
   rows,
-  disabled,
-  readonly,
   extendAction,
   onBlur,
   useRichEditor = false,
+  disabled,
+  readonly,
 }: FormFieldProps) => {
   const commonProps = {
     placeholder,
@@ -57,33 +57,6 @@ export const FormField = ({
     disabled,
     readOnly: readonly,
   }
-
-  // const handleAIRequest = async (request: any, respondWith: any) => {
-  //   try {
-  //     const response = await fetch('/api/ai-assist', {
-  //       method: 'POST',
-  //       headers: {
-  //         'Content-Type': 'application/json',
-  //       },
-  //       body: JSON.stringify({
-  //         prompt: request.prompt,
-  //         context: request.context,
-  //       }),
-  //     })
-
-  //     if (!response.ok) {
-  //       throw new Error('AI request failed')
-  //     }
-
-  //     const data = await response.json()
-  //     respondWith.string(() => Promise.resolve(data.content))
-  //   } catch (error) {
-  //     console.error('AI Assistant error:', error)
-  //     respondWith.string(() =>
-  //       Promise.reject('AI Assistant is currently unavailable')
-  //     )
-  //   }
-  // }
 
   return (
     <div className="space-y-2">
@@ -126,8 +99,6 @@ export const FormField = ({
               branding: false,
               promotion: false,
               placeholder: placeholder,
-              readonly: readonly,
-              disabled: disabled,
               setup: (editor: any) => {
                 editor.on('blur', () => {
                   const content = editor.getContent()
@@ -137,10 +108,10 @@ export const FormField = ({
                 })
               },
             }}
-            value={watch ? watch(name) : ''}
+            value={watch ? watch('message') : ''}
             onEditorChange={content => {
               if (setValue) {
-                setValue(name, content)
+                setValue('message', content)
               }
             }}
           />

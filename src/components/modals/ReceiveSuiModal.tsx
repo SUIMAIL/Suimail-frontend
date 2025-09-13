@@ -7,17 +7,17 @@ import {
   AlertDialogHeader,
   AlertDialogTitle,
   AlertDialogTrigger,
-} from './ui/alert-dialog'
-import { Button } from './ui/button'
+} from '../ui/alert-dialog'
+import { Button } from '../ui/button'
 import QRCode from 'qrcode'
 import { useState, useEffect } from 'react'
-import { useToastContext } from './ui/toast'
+import { useToastContext } from '../ui/toast'
 
-interface RecieveSuiModalProps {
+interface ReceiveSuiModalProps {
   currentAddress: string
 }
 
-export function RecieveSuiModal({ currentAddress }: RecieveSuiModalProps) {
+export function ReceiveSuiModal({ currentAddress }: ReceiveSuiModalProps) {
   const [isOpen, setIsOpen] = useState(false)
   const [qrCode, setQrCode] = useState<string | null>(null)
   const [isCopied, setIsCopied] = useState(false)

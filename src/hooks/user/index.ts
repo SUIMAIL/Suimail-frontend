@@ -6,14 +6,6 @@ import {
 } from '@tanstack/react-query'
 import type { AxiosError } from 'axios'
 
-export const useSetUserSuimailNsMutation = () => {
-  return useMutation({
-    mutationFn: async ({ suimailNs }: { suimailNs: string }) => {
-      return await httpService.post('/user/suimailns', { suimailNs })
-    },
-  })
-}
-
 export const useGetUserMailFeeAndAddressQuery = (
   recipient: string,
   options?: Omit<

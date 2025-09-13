@@ -4,7 +4,7 @@ import { FormSection } from './components/FormSection'
 import { PageLayout } from '@/components/layouts'
 import { useMemo } from 'react'
 
-export function SubnameView() {
+export function MailAddressView() {
   const {
     data: profileImageData,
     isPending: isLoadingProfileImage,
@@ -19,8 +19,8 @@ export function SubnameView() {
   return (
     <PageLayout loading={isLoadingProfileImage} isError={isError}>
       <SubviewHeader
-        title="Subname Settings"
-        description="Manage your subname, including name, description, and image."
+        title="Mail Address Settings"
+        description="Manage your name, description, and image."
       />
 
       <div className="mt-10">

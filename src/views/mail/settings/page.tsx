@@ -4,12 +4,12 @@ import { SetTabButton } from './components/set-tab-button'
 import { NotificationsView } from './views/Notifications'
 import { AccountView } from './views/Account'
 import { PreferencesView } from './views/Preferences'
-import { SubnameView } from './views/Subname'
+import { MailAddressView } from './views/MailAddress'
 import { PageLayout } from '@/components/layouts'
 import { ExtendedToolbar } from '@/components/ExtendedToolbar'
 
 const tabs: SettingsTab[] = [
-  { label: 'Subname', view: 'subname' },
+  { label: 'Mail Address', view: 'mailaddress' },
   {
     label: 'Notifications',
     view: 'notifications',
@@ -18,11 +18,11 @@ const tabs: SettingsTab[] = [
 ]
 
 export default function SettingsPage() {
-  const [activeView, setActiveView] = useState<SettingsViewType>('subname')
+  const [activeView, setActiveView] = useState<SettingsViewType>('mailaddress')
 
   const views: Record<SettingsViewType, React.ReactNode> = useMemo(() => {
     return {
-      subname: <SubnameView />,
+      mailaddress: <MailAddressView />,
       notifications: <NotificationsView />,
       account: <AccountView />,
       preferences: <PreferencesView />,

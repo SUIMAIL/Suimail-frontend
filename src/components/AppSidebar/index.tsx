@@ -21,7 +21,6 @@ import {
   Inbox,
   LogOut,
   Plus,
-  Repeat,
   SendHorizonal,
   Settings,
   Trash2,
@@ -31,7 +30,7 @@ import { Profile } from './Profile'
 import { Skeleton } from '../ui/skeleton'
 import useMediaQuery from '@/hooks/useMediaQuery'
 import { useGetAuthUserQuery } from '@/hooks/auth'
-import { useLogoutModal } from '../LogoutModal'
+import { useLogoutModal } from '../modals/LogoutModal'
 
 interface SidebarItem {
   title: string
@@ -78,11 +77,11 @@ const AccountNavigationItems: SidebarItem[] = [
     url: '/account/wallet',
     icon: <Wallet />,
   },
-  {
-    title: 'Subscription',
-    url: '/account/subscription',
-    icon: <Repeat />,
-  },
+  // {
+  //   title: 'Subscription',
+  //   url: '/account/subscription',
+  //   icon: <Repeat />,
+  // },
 ]
 
 const HelpNavigationItems: SidebarItem[] = [

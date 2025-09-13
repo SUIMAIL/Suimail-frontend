@@ -169,7 +169,7 @@ export function ReplyComposer({
             {/* Rich Text Editor */}
             <div className="mb-4">
               <Editor
-                onInit={(evt, editor) => (editorRef.current = editor)}
+                onInit={(_evt, editor) => (editorRef.current = editor)}
                 apiKey={import.meta.env.VITE_TINYMCE_API_KEY}
                 init={{
                   height: 300,

@@ -10,7 +10,7 @@ export default function AppProvider({ children }: AppProviderProps) {
   const [walletAddress, setWalletAddress] = useState('')
   const [connectionState, setConnectionState] = useState('')
   const [mailFee, setMailFee] = useState(0)
-  const [subname, setSubname] = useState('')
+  const [suimailNs, setSuimailNs] = useState('')
 
   return (
     <AppContext.Provider
@@ -23,8 +23,8 @@ export default function AppProvider({ children }: AppProviderProps) {
         setConnectionState,
         mailFee,
         setMailFee,
-        subname,
-        setSubname,
+        suimailNs,
+        setSuimailNs,
       }}
     >
       {children}
