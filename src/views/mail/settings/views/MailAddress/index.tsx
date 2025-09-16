@@ -3,6 +3,7 @@ import { SubviewHeader } from '../../components/subview-header'
 import { FormSection } from './components/FormSection'
 import { PageLayout } from '@/components/layouts'
 import { useMemo } from 'react'
+import { useGetAuthUserQuery } from '@/hooks/auth'
 
 export function MailAddressView() {
   const {
@@ -10,6 +11,8 @@ export function MailAddressView() {
     isPending: isLoadingProfileImage,
     isError,
   } = useGetUserProfileImageQuery()
+
+  const { data: user } = useGetAuthUserQuery()
 
   const profileImage = useMemo(
     () => profileImageData?.imageUrl,
@@ -20,11 +23,14 @@ export function MailAddressView() {
     <PageLayout loading={isLoadingProfileImage} isError={isError}>
       <SubviewHeader
         title="Mail Address Settings"
-        description="Manage your name, description, and image."
+        description="Manage your name, bio, and image."
       />
 
       <div className="mt-10">
-        <FormSection activeUserProfileImage={profileImage} />
+        <FormSection
+          activeUserProfileImage={profileImage}
+          activeUserSuimailNs={user?.suimailNs}
+        />
       </div>
     </PageLayout>
   )

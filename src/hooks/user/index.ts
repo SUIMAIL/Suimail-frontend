@@ -130,7 +130,7 @@ export const useSetUserProfileImageMutation = () => {
 export const useGetUserProfileImageQuery = () => {
   return useQuery({
     queryKey: ['user-profile-image'],
-    queryFn: async () => {
+    queryFn: async (): Promise<{ imageUrl: string }> => {
       return await httpService.get('/user/image-url')
     },
   })
