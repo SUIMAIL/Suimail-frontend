@@ -10,8 +10,10 @@ import { useMemo, useState } from 'react'
 
 export function FormSection({
   activeUserProfileImage,
+  activeUserSuimailNs,
 }: {
-  activeUserProfileImage: string | null
+  activeUserSuimailNs?: string
+  activeUserProfileImage?: string
 }) {
   const [isUploading, setIsUploading] = useState(false)
 
@@ -22,6 +24,16 @@ export function FormSection({
   const { mutateAsync: setUserProfileImage } = useSetUserProfileImageMutation()
 
   const { setNotification } = useToastContext()
+
+  const activeUserImage = useMemo(
+    () => imageRef || activeUserProfileImage,
+    [activeUserProfileImage, imageRef]
+  )
+
+  const activeUserSuimailNsValue = useMemo(
+    () => (activeUserSuimailNs ? activeUserSuimailNs : 'Loading...'),
+    [activeUserSuimailNs]
+  )
 
   const handleFileChange = (event: React.ChangeEvent<HTMLInputElement>) => {
     const file = event.target.files?.[0]
@@ -78,11 +90,6 @@ export function FormSection({
     }
   }
 
-  const activeUserImage = useMemo(
-    () => imageRef || activeUserProfileImage,
-    [activeUserProfileImage, imageRef]
-  )
-
   return (
     <form className="flex flex-col space-y-6">
       <div className="w-fit flex flex-col items-center space-y-4">
@@ -134,7 +141,7 @@ export function FormSection({
         <Input
           id="subname"
           type="text"
-          value="johndoe@suimail"
+          value={activeUserSuimailNsValue}
           readOnly
           className="bg-muted text-muted-foreground focus-visible:ring-0"
         />
