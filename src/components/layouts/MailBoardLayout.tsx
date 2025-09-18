@@ -1,6 +1,8 @@
 import { Navigate, Outlet, useLocation } from 'react-router-dom'
 import { AppSidebar } from '../AppSidebar'
 import { ComposeButton } from '../ComposeButton'
+import { FeedbackButton } from '../Feedback'
+
 import { useGetAuthUserQuery } from '@/hooks/auth'
 import { Loading } from '../Loading'
 import useMediaQuery from '@/hooks/useMediaQuery'
@@ -31,6 +33,9 @@ const MailBoardLayout = () => {
       <main className="relative flex-1">
         <Outlet />
         {isMobile && !isComposePage && !isHelpPage && <ComposeButton />}
+
+        {/* Draggable Feedback Button with Attention Animation */}
+        <FeedbackButton />
       </main>
       <LogoutModal open={open} setOpen={setOpen} />
     </>
