@@ -8,7 +8,6 @@ import type {
 } from 'react-hook-form'
 import type { ComposeFormData } from './FormSection'
 import { ComposeEditor } from './ComposeEditor'
-///git remote set-url origin https://github.com/cherry-creator-official/suimail-frontend.git
 interface FormFieldProps {
   label: string
   name: keyof ComposeFormData
