@@ -8,7 +8,7 @@ import type {
 } from 'react-hook-form'
 import type { ComposeFormData } from './FormSection'
 import { ComposeEditor } from './ComposeEditor'
-
+///git remote set-url origin https://github.com/cherry-creator-official/suimail-frontend.git
 interface FormFieldProps {
   label: string
   name: keyof ComposeFormData
@@ -25,6 +25,7 @@ interface FormFieldProps {
   useRichEditor?: boolean
   disabled?: boolean
   readonly?: boolean
+  className?: string // Add this line
 }
 
 export const FormField = ({
@@ -43,6 +44,7 @@ export const FormField = ({
   useRichEditor = false,
   disabled,
   readonly,
+  className, // Add this line
 }: FormFieldProps) => {
   const commonProps = {
     placeholder,
@@ -71,9 +73,19 @@ export const FormField = ({
             rows={rows}
           />
         ) : type === 'textarea' ? (
-          <Textarea id={name} rows={rows} {...commonProps} />
+          <Textarea
+            id={name}
+            rows={rows}
+            className={className} // Apply className here
+            {...commonProps}
+          />
         ) : (
-          <Input id={name} type={type} {...commonProps} />
+          <Input
+            id={name}
+            type={type}
+            className={className} // Apply className here
+            {...commonProps}
+          />
         )}
         {extendAction && extendAction}
       </div>
