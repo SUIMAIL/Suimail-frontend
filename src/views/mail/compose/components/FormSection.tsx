@@ -216,6 +216,7 @@ export function FormSection({ onSubmit, isLoading }: FormSectionProps) {
           <div className="relative">
             <FormField
               name="recipient"
+              label="" // Fixed: Added required label prop
               placeholder="e.g. jane@suimailapp"
               error={errors.recipient?.message || recipientError}
               register={register}
@@ -277,6 +278,7 @@ export function FormSection({ onSubmit, isLoading }: FormSectionProps) {
 
           <FormField
             name="subject"
+            label="" // Fixed: Added required label prop
             placeholder="What's this about?"
             error={errors.subject?.message}
             register={register}
@@ -289,6 +291,7 @@ export function FormSection({ onSubmit, isLoading }: FormSectionProps) {
           <Label className="text-sm font-medium text-gray-700">Message</Label>
           <FormField
             name="message"
+            label="" // Fixed: Added required label prop
             type="textarea"
             placeholder="Write your message here..."
             error={errors.message?.message}
