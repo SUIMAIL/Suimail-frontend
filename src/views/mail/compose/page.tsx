@@ -6,7 +6,6 @@ import { usePostSendMailMutation } from '@/hooks/mail'
 import { FormSection } from './components/FormSection'
 import { useToastContext } from '@/components/ui/toast'
 import { useCreateEscrowTx } from './utils/create-escrow-tx'
-import { MailBoardPageLayout, DefaultPagePadding } from '@/components/layouts'
 import {
   checkValidAttachmentSize,
   checkValidTotalAttachmentsSize,
@@ -142,28 +141,31 @@ export default function ComposePage() {
   }
 
   return (
-    <div className="flex flex-col min-h-screen bg-white">
-      <div className="flex items-center justify-between border-b border-gray-200 bg-gray-50 px-4 py-3">
-        <div className="flex items-center gap-2">
+    <div className="bg-gray-50 min-h-screen">
+      {/* Sticky Header */}
+      <div className="sticky top-0 z-10 bg-white border-b border-gray-200 shadow-sm">
+        <div className="flex items-center gap-3 px-4 py-3">
           <Button
             variant="ghost"
-            size="icon"
+            size="sm"
             onClick={() => navigate(-1)}
-            aria-label="Go back"
+            className="flex items-center gap-2 text-gray-600 hover:text-gray-900 hover:bg-gray-100 transition-colors"
           >
-            <ArrowLeft className="h-4 w-4 text-gray-600" />
+            <ArrowLeft className="h-4 w-4" />
+            <span className="hidden sm:inline">Back</span>
           </Button>
-          <h1 className="text-lg font-medium">New Message</h1>
+          <div className="flex items-center gap-2">
+            <h1 className="text-lg font-semibold text-gray-900">New Message</h1>
+          </div>
         </div>
       </div>
 
-      <DefaultPagePadding>
-        <MailBoardPageLayout>
-          <div className="max-w-xl mx-auto">
-            <FormSection onSubmit={handleSend} isLoading={isSendingMail} />
-          </div>
-        </MailBoardPageLayout>
-      </DefaultPagePadding>
+      {/* Main Content */}
+      <div className="container mx-auto px-4 py-6 max-w-4xl">
+        <div className="max-w-2xl mx-auto">
+          <FormSection onSubmit={handleSend} isLoading={isSendingMail} />
+        </div>
+      </div>
     </div>
   )
 }
