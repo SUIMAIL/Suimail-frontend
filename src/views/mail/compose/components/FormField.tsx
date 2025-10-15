@@ -8,7 +8,6 @@ import type {
 } from 'react-hook-form'
 import type { ComposeFormData } from './FormSection'
 import { ComposeEditor } from './ComposeEditor'
-
 interface FormFieldProps {
   label: string
   name: keyof ComposeFormData
@@ -25,6 +24,7 @@ interface FormFieldProps {
   useRichEditor?: boolean
   disabled?: boolean
   readonly?: boolean
+  className?: string // Add this line
 }
 
 export const FormField = ({
@@ -43,6 +43,7 @@ export const FormField = ({
   useRichEditor = false,
   disabled,
   readonly,
+  className, // Add this line
 }: FormFieldProps) => {
   const commonProps = {
     placeholder,

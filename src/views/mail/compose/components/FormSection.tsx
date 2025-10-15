@@ -2,7 +2,7 @@ import type React from 'react'
 import { useEffect, useMemo, useState } from 'react'
 import { z } from 'zod'
 import { useForm } from 'react-hook-form'
-import { Paperclip, Send, X } from 'lucide-react'
+import { Paperclip, Send, X, Mail, User, FileText, Loader2 } from 'lucide-react'
 import { zodResolver } from '@hookform/resolvers/zod'
 import { FormField } from './FormField'
 import { Input } from '@/components/ui/input'
@@ -96,6 +96,7 @@ export function FormSection({ onSubmit, isLoading }: FormSectionProps) {
   }, [mailFeeAndAddressResult, senderListedData])
 
   const attachments = watch('attachments') || []
+  const isValidating = isFetchingMailFeeAndAddress || isFetchingSenderListedData
 
   const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     if (e.target.files) {
@@ -187,46 +188,71 @@ export function FormSection({ onSubmit, isLoading }: FormSectionProps) {
     setValue('recipient', '')
   }
 
-  const attachmentsDetailsText = () => {
+  const getAttachmentsInfo = () => {
     if (attachments.length === 0) return null
-
-    return `${attachments.length} File${attachments.length > 1 ? 's' : ''} - ${prettyBytes(calculateTotalAttachmentsSize(attachments))}`
+    const totalSize = calculateTotalAttachmentsSize(attachments)
+    return {
+      count: attachments.length,
+      size: prettyBytes(totalSize),
+      text: `${attachments.length} file${attachments.length > 1 ? 's' : ''} • ${prettyBytes(totalSize)}`,
+    }
   }
 
   return (
-    <form onSubmit={handleSubmit(handleOnSubmit)} className="space-y-5">
-      <div>
-        <FormField
-          label="To"
-          name="recipient"
-          placeholder="e.g. jane@suimailapp"
-          error={errors.recipient?.message || recipientError}
-          register={register}
-          required
-          disabled={
-            recipientIsSet ||
-            isFetchingMailFeeAndAddress ||
-            isFetchingSenderListedData
-          }
-          readonly={recipientIsSet}
-          onBlur={() => {
-            if (watch('recipient')) {
-              if (isValidSuimailAddress(watch('recipient'))) {
-                setValue('recipient', watch('recipient'), {
-                  shouldValidate: true,
-                })
-                refetchMailFeeAndAddress()
-                refetchSenderListedData()
-              } else {
-                setValue('recipient', watch('recipient'), {
-                  shouldValidate: true,
-                  shouldTouch: true,
-                })
-              }
-            }
-          }}
-          extendAction={
-            recipientIsSet && (
+    <div className="bg-white rounded-xl shadow-sm border border-gray-200 overflow-hidden">
+      {/* Header */}
+      <div className="bg-gradient-to-r from-blue-50 to-indigo-50 px-6 py-4 border-b border-gray-200">
+        <div className="flex items-center gap-3">
+          <div className="bg-blue-100 p-2 rounded-lg">
+            <Mail className="w-5 h-5 text-blue-600" />
+          </div>
+          <h2 className="text-lg font-semibold text-gray-900">
+            Compose Message
+          </h2>
+        </div>
+      </div>
+
+      <form onSubmit={handleSubmit(handleOnSubmit)} className="p-6 space-y-6">
+        {/* Recipient Field */}
+        <div className="space-y-2">
+          <div className="flex items-center gap-2 mb-2">
+            <User className="w-4 h-4 text-gray-500" />
+            <Label className="text-sm font-medium text-gray-700">To</Label>
+            {isValidating && (
+              <Loader2 className="w-4 h-4 animate-spin text-blue-500" />
+            )}
+          </div>
+
+          <div className="relative">
+            <FormField
+              name="recipient"
+              label="" // Fixed: Added required label prop
+              placeholder="e.g. jane@suimailapp"
+              error={errors.recipient?.message || recipientError}
+              register={register}
+              required
+              disabled={recipientIsSet || isValidating}
+              readonly={recipientIsSet}
+              className="pr-10"
+              onBlur={() => {
+                if (watch('recipient')) {
+                  if (isValidSuimailAddress(watch('recipient'))) {
+                    setValue('recipient', watch('recipient'), {
+                      shouldValidate: true,
+                    })
+                    refetchMailFeeAndAddress()
+                    refetchSenderListedData()
+                  } else {
+                    setValue('recipient', watch('recipient'), {
+                      shouldValidate: true,
+                      shouldTouch: true,
+                    })
+                  }
+                }
+              }}
+            />
+
+            {recipientIsSet && (
               <Button
                 type="button"
                 variant="link"
@@ -235,10 +261,8 @@ export function FormSection({ onSubmit, isLoading }: FormSectionProps) {
               >
                 <X className="w-4 h-4" />
               </Button>
-            )
-          }
-        />
-      </div>
+            )}
+          </div>
 
       <ReturnRequiredFee
         isFetching={isFetchingMailFeeAndAddress || isFetchingSenderListedData}
@@ -301,8 +325,50 @@ export function FormSection({ onSubmit, isLoading }: FormSectionProps) {
               </div>
             ))}
           </div>
+
+          {/* File Input */}
+          <div className="relative">
+            <Input
+              type="file"
+              multiple
+              onChange={handleFileChange}
+              className="block w-full text-sm text-gray-500 file:mr-4 file:py-2 file:px-4 file:rounded-lg file:border-0 file:text-sm file:font-medium file:bg-blue-50 file:text-blue-700 hover:file:bg-blue-100 cursor-pointer border-dashed border-2 border-gray-300 hover:border-blue-400 transition-colors"
+            />
+          </div>
+
+          {/* Attachment List */}
+          {attachments.length > 0 && (
+            <div className="space-y-2">
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
+                {attachments.map((file, index) => (
+                  <div
+                    key={index}
+                    className="flex items-center justify-between bg-gray-50 hover:bg-gray-100 px-3 py-2 rounded-lg border border-gray-200 transition-colors group"
+                  >
+                    <div className="flex items-center gap-2 min-w-0 flex-1">
+                      <Paperclip className="w-4 h-4 text-gray-400 flex-shrink-0" />
+                      <span className="text-sm text-gray-700 truncate">
+                        {file.name}
+                      </span>
+                      <span className="text-xs text-gray-500 flex-shrink-0">
+                        {prettyBytes(file.size)}
+                      </span>
+                    </div>
+                    <Button
+                      type="button"
+                      variant="ghost"
+                      size="sm"
+                      onClick={() => removeAttachment(index)}
+                      className="h-8 w-8 p-0 text-gray-400 hover:text-red-500 hover:bg-red-50 opacity-0 group-hover:opacity-100 transition-all flex-shrink-0"
+                    >
+                      <X className="w-4 h-4" />
+                    </Button>
+                  </div>
+                ))}
+              </div>
+            </div>
+          )}
         </div>
-      </div>
 
       <div className="flex justify-end gap-2 pt-2">
         <Button
