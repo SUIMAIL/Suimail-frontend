@@ -6,7 +6,6 @@ import { usePostSendMailMutation } from '@/hooks/mail'
 import { FormSection } from './components/FormSection'
 import { useToastContext } from '@/components/ui/toast'
 import { useCreateEscrowTx } from './utils/create-escrow-tx'
-import { MailBoardPageLayout, DefaultPagePadding } from '@/components/layouts'
 import {
   checkValidAttachmentSize,
   checkValidTotalAttachmentsSize,
@@ -103,6 +102,15 @@ export default function ComposePage() {
 
       data.attachments?.forEach(file => formData.append('attachments', file))
 
+      // Navigate to inbox immediately for fast UX
+      navigate('/mail/inbox')
+
+      setNotification({
+        message: 'Sending mail...',
+        type: 'success',
+      })
+
+      // Send mail in background
       sendMail(formData)
         .then(async () => {
           setNotification({
@@ -115,18 +123,25 @@ export default function ComposePage() {
             has_fee: data.requiredFee > 0,
           })
           await queryClient.invalidateQueries({
-            queryKey: ['outbox-mails'],
+            queryKey: ['outbox-mails', 'inbox-mails'],
           })
-          navigate('/mail/sent')
         })
         .catch(error => {
           if (error instanceof AxiosError) {
             setNotification({
-              message: error.response?.data.message,
+              message: error.response?.data.message || 'Failed to send mail',
               type: 'error',
             })
             mixpanel.track('Send Mail Failure', {
               reason: error.response?.data.message,
+            })
+          } else {
+            setNotification({
+              message: 'Failed to send mail',
+              type: 'error',
+            })
+            mixpanel.track('Send Mail Failure', {
+              reason: 'Unknown error',
             })
           }
         })
@@ -142,28 +157,27 @@ export default function ComposePage() {
   }
 
   return (
-    <div className="flex flex-col min-h-screen bg-white">
-      <div className="flex items-center justify-between border-b border-gray-200 bg-gray-50 px-4 py-3">
-        <div className="flex items-center gap-2">
-          <Button
-            variant="ghost"
-            size="icon"
-            onClick={() => navigate(-1)}
-            aria-label="Go back"
-          >
-            <ArrowLeft className="h-4 w-4 text-gray-600" />
-          </Button>
-          <h1 className="text-lg font-medium">New Message</h1>
-        </div>
+    <div className="flex flex-col min-h-screen surface-base">
+      {/* Header */}
+      <div className="sticky top-0 z-10 flex items-center gap-3 border-b border-border surface-light elevation-1 px-4 py-3">
+        <Button
+          variant="ghost"
+          size="icon"
+          onClick={() => navigate(-1)}
+          aria-label="Go back"
+          className="hover:bg-accent flex-shrink-0"
+        >
+          <ArrowLeft className="h-5 w-5 text-foreground" />
+        </Button>
+        <h1 className="text-lg font-semibold text-foreground">New Message</h1>
       </div>
 
-      <DefaultPagePadding>
-        <MailBoardPageLayout>
-          <div className="max-w-xl mx-auto">
-            <FormSection onSubmit={handleSend} isLoading={isSendingMail} />
-          </div>
-        </MailBoardPageLayout>
-      </DefaultPagePadding>
+      {/* Content */}
+      <div className="flex-1 overflow-y-auto">
+        <div className="max-w-3xl mx-auto px-4 sm:px-6 py-6 sm:py-8">
+          <FormSection onSubmit={handleSend} isLoading={isSendingMail} />
+        </div>
+      </div>
     </div>
   )
 }

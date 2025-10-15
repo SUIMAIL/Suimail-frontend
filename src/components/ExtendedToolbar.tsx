@@ -26,7 +26,7 @@ export function ExtendedToolbar({
     <div
       className={cn(
         isSticky ? 'fixed' : 'relative',
-        'z-[40] w-full flex items-center h-14 px-4 border-b border-gray-200 bg-white'
+        'z-[40] w-full flex items-center h-14 px-4 border-b border-border surface-light elevation-1'
       )}
     >
       <div className="flex items-center gap-2">
@@ -37,7 +37,7 @@ export function ExtendedToolbar({
             variant="ghost"
             size="icon"
             onClick={() => navigate(-1)}
-            className="mr-1"
+            className="mr-1 hover:bg-accent"
             aria-label="Go back"
           >
             <ArrowLeft className="h-4 w-4" />
@@ -45,7 +45,9 @@ export function ExtendedToolbar({
         )}
 
         {!searchOpen && (
-          <h1 className="text-lg font-medium ml-2">{getPageTitle()}</h1>
+          <h1 className="text-lg font-semibold ml-2 text-foreground">
+            {getPageTitle()}
+          </h1>
         )}
       </div>
 
@@ -55,13 +57,13 @@ export function ExtendedToolbar({
             <Input
               type="search"
               placeholder="Search mails..."
-              className="w-[300px] pr-8"
+              className="w-[300px] pr-8 surface-base border-border focus:ring-blue-base"
               autoFocus
             />
             <Button
               variant="ghost"
               size="icon"
-              className="absolute right-0"
+              className="absolute right-0 hover:bg-accent"
               onClick={() => setSearchOpen(false)}
             >
               <X className="h-4 w-4" />
@@ -72,6 +74,7 @@ export function ExtendedToolbar({
             variant="ghost"
             size="icon"
             onClick={() => setSearchOpen(true)}
+            className="hover:bg-accent"
             aria-label="Search"
           >
             <Search className="h-4 w-4" />

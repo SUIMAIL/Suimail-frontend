@@ -23,7 +23,7 @@ const PageLayout = ({
 
   if (isError) {
     return (
-      <div className="flex flex-col items-center justify-center min-h-screen">
+      <div className="flex flex-col items-center justify-center min-h-screen surface-base">
         <div className="flex flex-col items-center justify-center">
           <div className="w-full max-w-[300px] opacity-90">
             <img
@@ -34,11 +34,11 @@ const PageLayout = ({
           </div>
 
           <div className="flex flex-col items-center justify-center gap-2">
-            <h1 className="text-2xl font-bold">Oh no!</h1>
-            <p className="text-gray-500">Something went wrong</p>
+            <h1 className="text-2xl font-bold text-foreground">Oh no!</h1>
+            <p className="text-muted-foreground">Something went wrong</p>
           </div>
           <Button
-            className="mt-5 bg-blue-500 hover:bg-blue-600"
+            className="mt-5 bg-blue-base hover:bg-blue-dark text-white"
             onClick={retry}
           >
             Retry

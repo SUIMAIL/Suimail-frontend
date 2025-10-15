@@ -54,16 +54,6 @@ const MailNavigationItems: SidebarItem[] = [
     url: '/mail/draft',
     icon: <FileEdit />,
   },
-  // {
-  //   title: "Spam",
-  //   url: "/mail/spam",
-  //   icon: <ShieldAlert />,
-  // },
-  // {
-  //   title: "Archive",
-  //   url: "/mail/archive",
-  //   icon: <Archive />,
-  // },
   {
     title: 'Trash',
     url: '/mail/trash',
@@ -77,11 +67,6 @@ const AccountNavigationItems: SidebarItem[] = [
     url: '/account/wallet',
     icon: <Wallet />,
   },
-  // {
-  //   title: 'Subscription',
-  //   url: '/account/subscription',
-  //   icon: <Repeat />,
-  // },
 ]
 
 const HelpNavigationItems: SidebarItem[] = [
@@ -121,44 +106,47 @@ export function AppSidebar() {
   }
 
   return (
-    <Sidebar className="fixed">
-      <SidebarHeader className="py-5 flex flex-col items-center">
+    <Sidebar className="fixed border-r border-border surface-light">
+      <SidebarHeader className="py-4 px-4 flex flex-col items-center gap-3">
         <img
           src="/images/suimail-logo.png"
           alt="SUIMAIL"
-          className="w-[150px] h-auto"
+          className="w-[130px] h-auto"
         />
 
         {!isSmallScreen && (
-          <div className="mt-2 px-4 w-full">
-            <Button
-              asChild
-              className="flex items-center justify-center w-full bg-blue-500 hover:bg-blue-600 text-white py-2 px-4 rounded-full gap-2"
-              onClick={handleComposeClick}
-            >
-              <Link to="">
-                <Plus className="size-4" />
-                <span>Compose</span>
-              </Link>
-            </Button>
-          </div>
+          <Button
+            asChild
+            className="w-full bg-blue-base hover:bg-blue-dark text-white py-2.5 px-4 rounded-lg gap-2 touch-target transition-all duration-200 hover:shadow-hover font-medium"
+            onClick={handleComposeClick}
+          >
+            <Link to="">
+              <Plus className="size-4" />
+              <span>Compose</span>
+            </Link>
+          </Button>
         )}
       </SidebarHeader>
 
       <SidebarSeparator />
 
-      <SidebarContent>
+      <SidebarContent className="py-2">
         <SidebarGroup>
-          <SidebarGroupLabel>Mail</SidebarGroupLabel>
+          <SidebarGroupLabel className="px-4 py-2 text-xs font-semibold text-muted-foreground uppercase">
+            Mail
+          </SidebarGroupLabel>
           <SidebarGroupContent>
-            <SidebarMenu>
+            <SidebarMenu className="px-2">
               {MailNavigationItems.map(item => (
                 <SidebarMenuItem key={item.title}>
                   <SidebarMenuButton
                     isActive={pathname === item.url}
                     asChild
                     className={cn(
-                      'flex items-center gap-2 text-sm font-medium text-gray-500 hover:text-gray-700'
+                      'flex items-center gap-3 px-3 py-2 rounded-lg text-sm font-medium transition-colors',
+                      pathname === item.url
+                        ? 'bg-blue-base/10 text-blue-base'
+                        : 'text-muted-foreground hover:text-foreground hover:bg-accent'
                     )}
                   >
                     <Link to={item.url} onClick={e => handleGoTo(e, item.url)}>
@@ -171,18 +159,23 @@ export function AppSidebar() {
             </SidebarMenu>
           </SidebarGroupContent>
         </SidebarGroup>
-        <SidebarSeparator />
+        <SidebarSeparator className="my-2" />
         <SidebarGroup>
-          <SidebarGroupLabel>Account</SidebarGroupLabel>
+          <SidebarGroupLabel className="px-4 py-2 text-xs font-semibold text-muted-foreground uppercase">
+            Account
+          </SidebarGroupLabel>
           <SidebarGroupContent>
-            <SidebarMenu>
+            <SidebarMenu className="px-2">
               {AccountNavigationItems.map(item => (
                 <SidebarMenuItem key={item.title}>
                   <SidebarMenuButton
                     isActive={pathname === item.url}
                     asChild
                     className={cn(
-                      'flex items-center gap-2 text-sm font-medium text-gray-500 hover:text-gray-700'
+                      'flex items-center gap-3 px-3 py-2 rounded-lg text-sm font-medium transition-colors',
+                      pathname === item.url
+                        ? 'bg-blue-base/10 text-blue-base'
+                        : 'text-muted-foreground hover:text-foreground hover:bg-accent'
                     )}
                   >
                     <Link to={item.url} onClick={e => handleGoTo(e, item.url)}>
@@ -197,15 +190,18 @@ export function AppSidebar() {
         </SidebarGroup>
       </SidebarContent>
 
-      <SidebarFooter className="border-t p-4">
-        <SidebarMenu>
+      <SidebarFooter className="border-t border-border p-3">
+        <SidebarMenu className="px-2 space-y-1">
           {HelpNavigationItems.map(item => (
             <SidebarMenuItem key={item.title}>
               <SidebarMenuButton
                 isActive={pathname === item.url}
                 asChild
                 className={cn(
-                  'flex items-center gap-2 text-sm font-medium text-gray-500 hover:text-gray-700'
+                  'flex items-center gap-3 px-3 py-2 rounded-lg text-sm font-medium transition-colors',
+                  pathname === item.url
+                    ? 'bg-blue-base/10 text-blue-base'
+                    : 'text-muted-foreground hover:text-foreground hover:bg-accent'
                 )}
               >
                 <Link to={item.url} onClick={e => handleGoTo(e, item.url)}>
@@ -222,7 +218,7 @@ export function AppSidebar() {
                 setOpenMobile(false)
                 setOpen(true)
               }}
-              className="flex items-center gap-2 text-sm font-medium text-red-500 hover:text-red-600 opacity-80 hover:opacity-100 w-full"
+              className="flex items-center gap-3 px-3 py-2 rounded-lg text-sm font-medium text-destructive hover:text-destructive/90 hover:bg-destructive/10 w-full transition-colors"
             >
               <LogOut className="size-4" />
               Logout
@@ -230,9 +226,9 @@ export function AppSidebar() {
           </SidebarMenuItem>
         </SidebarMenu>
 
-        <SidebarSeparator />
+        <SidebarSeparator className="my-2" />
 
-        <div className="mt-2">
+        <div className="px-2">
           {isFetching ? (
             <Skeleton className="w-10 h-10 rounded-full" />
           ) : (

@@ -60,7 +60,9 @@ export const FormField = ({
 
   return (
     <div className="space-y-2">
-      <Label htmlFor={name}>{label}</Label>
+      <Label htmlFor={name} className="text-foreground font-medium">
+        {label}
+      </Label>
 
       <div className="relative">
         {useRichEditor && type === 'textarea' ? (
@@ -71,13 +73,28 @@ export const FormField = ({
             rows={rows}
           />
         ) : type === 'textarea' ? (
-          <Textarea id={name} rows={rows} {...commonProps} />
+          <Textarea
+            id={name}
+            rows={rows}
+            {...commonProps}
+            className="surface-base border-border text-foreground placeholder:text-muted-foreground focus:ring-blue-base resize-none"
+          />
         ) : (
-          <Input id={name} type={type} {...commonProps} />
+          <Input
+            id={name}
+            type={type}
+            {...commonProps}
+            className="surface-base border-border text-foreground placeholder:text-muted-foreground focus:ring-blue-base"
+          />
         )}
         {extendAction && extendAction}
       </div>
-      {error && <span className="text-xs text-red-500/80">{error}</span>}
+      {error && (
+        <span className="text-xs text-destructive flex items-center gap-1">
+          <span className="inline-block w-1 h-1 rounded-full bg-destructive"></span>
+          {error}
+        </span>
+      )}
     </div>
   )
 }

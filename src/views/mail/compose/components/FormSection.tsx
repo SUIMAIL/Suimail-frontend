@@ -111,18 +111,28 @@ export function FormSection({ onSubmit, isLoading }: FormSectionProps) {
     )
   }
 
-  const handleOnSubmit = (data: ComposeFormData) => {
+  const handleOnSubmit = async (data: ComposeFormData) => {
     if (!recipientAddress) {
       setRecipientError('Recipient not found')
       setTimeout(() => setRecipientError(null), 2000)
       return
     }
 
-    onSubmit({
+    // Call onSubmit (which navigates immediately)
+    await onSubmit({
       ...data,
       requiredFee,
       recipientAddress: recipientAddress ?? '',
     })
+
+    // Clear form after navigation
+    setValue('recipient', '')
+    setValue('subject', '')
+    setValue('message', '')
+    setValue('attachments', [])
+    setRecipientIsSet(false)
+    setRecipientAddress(null)
+    setRecipientError(null)
   }
 
   useEffect(() => {
@@ -220,7 +230,7 @@ export function FormSection({ onSubmit, isLoading }: FormSectionProps) {
               <Button
                 type="button"
                 variant="link"
-                className="absolute top-1/2 -translate-y-1/2 right-2"
+                className="absolute top-1/2 -translate-y-1/2 right-2 text-muted-foreground hover:text-foreground"
                 onClick={handleClearRecipient}
               >
                 <X className="w-4 h-4" />
@@ -264,25 +274,27 @@ export function FormSection({ onSubmit, isLoading }: FormSectionProps) {
           type="file"
           multiple
           onChange={handleFileChange}
-          className="block w-full text-sm text-gray-500"
+          className="block w-full text-sm text-muted-foreground file:mr-4 file:py-2 file:px-4 file:rounded-full file:border-0 file:text-sm file:font-semibold file:bg-blue-base/10 file:text-blue-base hover:file:bg-blue-base/20 transition-colors"
         />
         <div>
           <div className="pl-2">
-            <p className="text-xs">{attachmentsDetailsText()}</p>
+            <p className="text-xs text-muted-foreground">
+              {attachmentsDetailsText()}
+            </p>
           </div>
 
-          <div className=" mt-2 flex flex-wrap gap-2">
+          <div className="mt-2 flex flex-wrap gap-2">
             {attachments.map((file, index) => (
               <div
                 key={index}
-                className="flex items-center bg-gray-100 px-3 py-1 rounded-full text-sm"
+                className="flex items-center surface-dark elevation-1 px-3 py-1 rounded-full text-sm text-foreground hover:elevation-2 transition-all"
               >
-                <Paperclip className="w-4 h-4 mr-1" />
-                {file.name}
+                <Paperclip className="w-4 h-4 mr-1 text-blue-base" />
+                <span className="max-w-[150px] truncate">{file.name}</span>
                 <button
                   type="button"
                   onClick={() => removeAttachment(index)}
-                  className="ml-2 text-red-500 hover:text-red-700"
+                  className="ml-2 text-destructive hover:text-destructive/80 transition-colors touch-target"
                 >
                   <X className="w-4 h-4" />
                 </button>
@@ -300,7 +312,7 @@ export function FormSection({ onSubmit, isLoading }: FormSectionProps) {
             isFetchingMailFeeAndAddress ||
             isFetchingSenderListedData
           }
-          className="flex items-center justify-center gap-2 bg-blue-600 hover:bg-blue-700 text-white px-5 py-2 rounded-lg font-medium transition"
+          className="flex items-center justify-center gap-2 bg-blue-base hover:bg-blue-dark text-white px-5 py-2 rounded-lg font-medium transition-all hover:shadow-hover touch-target"
         >
           <Send className="w-5 h-5" />
           {isLoading ? 'Sending...' : 'Send'}

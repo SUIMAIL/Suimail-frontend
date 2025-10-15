@@ -52,7 +52,7 @@ export function AccountView() {
         description="Manage your personal info, wallet, and linked accounts."
       />
 
-      <div className="flex flex-col gap-10">
+      <div className="flex flex-col gap-6 sm:gap-8 lg:gap-10 mt-6">
         <SetMailFeeCard
           userMailFee={activeUserMailFee}
           handleSetMailFee={handleSetMailFee}

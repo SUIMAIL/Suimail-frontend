@@ -8,7 +8,7 @@ import {
   AlertDialogHeader,
   AlertDialogTitle,
 } from '@/components/ui/alert-dialog'
-import { AlertCircle, Mail } from 'lucide-react'
+import { AlertTriangle, Mail, Database } from 'lucide-react'
 
 interface ConfirmSuimailNSModalProps {
   showConfirmDialog: boolean
@@ -25,40 +25,80 @@ export function ConfirmSuimailNSModal({
 }: ConfirmSuimailNSModalProps) {
   return (
     <AlertDialog open={showConfirmDialog} onOpenChange={setShowConfirmDialog}>
-      <AlertDialogContent>
+      <AlertDialogContent className="surface-light border-border max-w-md">
         <AlertDialogHeader>
-          <AlertDialogTitle>Confirm Your SuimailNS</AlertDialogTitle>
+          <AlertDialogTitle className="text-foreground text-xl">
+            Confirm Your SuiMail Address
+          </AlertDialogTitle>
           <AlertDialogDescription asChild>
             <div className="pt-2 space-y-4">
-              <div>You are about to register your suimail namespace:</div>
-              <div className="flex items-center justify-center bg-muted/50 p-3 rounded-md">
-                <Mail className="h-5 w-5 text-primary mr-2" />
-                <span className="font-medium">{suimailNs}</span>
+              <div className="text-muted-foreground">
+                You are about to register your SuiMail address:
               </div>
-              <div className="bg-amber-50 border border-amber-200 rounded-md p-3 text-amber-800">
-                <div className="flex items-start">
-                  <AlertCircle className="h-5 w-5 mr-2 flex-shrink-0 mt-0.5" />
-                  <div>
-                    <div className="font-medium">Important:</div>
-                    <div className="text-sm mt-1">
-                      Once registered, your suimail namespace{' '}
-                      <strong>cannot be changed</strong> due to the
-                      decentralized nature of the Sui blockchain.
+
+              {/* Email Address Display */}
+              <div className="flex items-center justify-center surface-dark elevation-1 p-4 rounded-lg border border-border">
+                <Mail className="h-5 w-5 text-blue-base mr-2" />
+                <span className="font-semibold text-foreground text-lg">
+                  {suimailNs}
+                </span>
+              </div>
+
+              {/* Test Environment Warning */}
+              <div className="bg-destructive/10 border-2 border-destructive/30 rounded-lg p-4">
+                <div className="flex items-start gap-3">
+                  <AlertTriangle className="h-5 w-5 text-destructive flex-shrink-0 mt-0.5" />
+                  <div className="space-y-2">
+                    <div className="font-semibold text-destructive text-sm">
+                      ⚠️ Test Environment Notice
+                    </div>
+                    <div className="text-xs text-destructive/90 space-y-1">
+                      <p>
+                        This is a <strong>test environment</strong>. All data
+                        may be cleared at any time without notice.
+                      </p>
+                      <p className="font-medium">
+                        🚫 Do NOT store sensitive or important information
+                      </p>
                     </div>
                   </div>
                 </div>
               </div>
-              <div>Are you sure you want to continue?</div>
+
+              {/* Blockchain Warning */}
+              <div className="bg-blue-base/10 border border-blue-base/30 rounded-lg p-4">
+                <div className="flex items-start gap-3">
+                  <Database className="h-5 w-5 text-blue-base flex-shrink-0 mt-0.5" />
+                  <div className="space-y-1">
+                    <div className="font-medium text-blue-base text-sm">
+                      Blockchain Registry
+                    </div>
+                    <div className="text-xs text-muted-foreground">
+                      Once registered, your address{' '}
+                      <strong className="text-foreground">
+                        cannot be changed
+                      </strong>{' '}
+                      due to the decentralized nature of the Sui blockchain.
+                    </div>
+                  </div>
+                </div>
+              </div>
+
+              <div className="text-sm text-muted-foreground">
+                Are you sure you want to continue with this address?
+              </div>
             </div>
           </AlertDialogDescription>
         </AlertDialogHeader>
         <AlertDialogFooter>
-          <AlertDialogCancel>Go Back</AlertDialogCancel>
+          <AlertDialogCancel className="border-border hover:bg-accent">
+            Go Back
+          </AlertDialogCancel>
           <AlertDialogAction
             onClick={handleOnConfirmSubmit}
-            className="bg-blue-500 hover:bg-blue-600"
+            className="bg-blue-base hover:bg-blue-dark text-white"
           >
-            Yes, I'm Sure
+            Yes, Register Now
           </AlertDialogAction>
         </AlertDialogFooter>
       </AlertDialogContent>

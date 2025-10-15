@@ -7,6 +7,7 @@ import { Checkbox } from '../ui/checkbox'
 import { useQueryClient } from '@tanstack/react-query'
 import { generateRandomId } from '@/utils/helpers'
 import mixpanel from '@/utils/mixpanel'
+import { useGetUserProfileImageQuery } from '@/hooks/user' // ✅ added
 
 interface EmailTabProps {
   mail: IEmail
@@ -25,6 +26,9 @@ export function EmailTab({
   const { pathname } = useLocation()
   const queryClient = useQueryClient()
 
+  const { data: profileImageData } = useGetUserProfileImageQuery() // ✅ fetch logged-in user's image
+  const userProfileImage = profileImageData?.imageUrl
+
   const isInboxPage = useMemo(() => pathname === '/mail/inbox', [pathname])
   const isOutboxPage = useMemo(() => pathname === '/mail/sent', [pathname])
 
@@ -38,8 +42,8 @@ export function EmailTab({
     if (isInboxPage) {
       return mail.sender?.imageUrl || '/images/avatar.png'
     }
-    return mail.recipient?.imageUrl || '/images/avatar.png'
-  }, [isInboxPage, mail])
+    return userProfileImage || mail.recipient?.imageUrl || '/images/avatar.png'
+  }, [isInboxPage, mail, userProfileImage])
 
   const renderActorSuimailNs = useMemo(() => {
     if (isInboxPage) {
@@ -57,15 +61,16 @@ export function EmailTab({
   }, [isInboxPage, mail])
 
   const updateMailReadStatus = () => {
-    const updateFunction = (oldData: any) => {
+    const updateFunction = (oldData: unknown) => {
       if (!oldData) return oldData
 
       // Handle different data structures
-      if (oldData.pages) {
+      if (typeof oldData === 'object' && oldData && 'pages' in oldData) {
         // Infinite query structure
         return {
           ...oldData,
-          pages: oldData.pages.map((page: any) => ({
+          // eslint-disable-next-line @typescript-eslint/no-explicit-any
+          pages: (oldData as { pages: any[] }).pages.map(page => ({
             ...page,
             data:
               page.data?.map((m: IEmail) =>
@@ -80,11 +85,16 @@ export function EmailTab({
         return oldData.map((m: IEmail) =>
           m.id === mail.id ? { ...m, readAt: new Date().toISOString() } : m
         )
-      } else if (oldData.data && Array.isArray(oldData.data)) {
+      } else if (
+        typeof oldData === 'object' &&
+        oldData &&
+        'data' in oldData &&
+        Array.isArray((oldData as { data: IEmail[] }).data)
+      ) {
         // Object with data array
         return {
           ...oldData,
-          data: oldData.data.map((m: IEmail) =>
+          data: (oldData as { data: IEmail[] }).data.map((m: IEmail) =>
             m.id === mail.id ? { ...m, readAt: new Date().toISOString() } : m
           ),
         }
@@ -93,12 +103,12 @@ export function EmailTab({
       return oldData
     }
 
-    // Update both inbox and outbox caches to be safe
+    // Update inbox and outbox caches
     queryClient.setQueriesData({ queryKey: ['inbox-mails'] }, updateFunction)
     queryClient.setQueriesData({ queryKey: ['outbox-mails'] }, updateFunction)
 
-    // Also update any specific mail-body cache
-    queryClient.setQueryData(['mail-body', mail.id], (oldData: any) => {
+    // Update mail-body cache
+    queryClient.setQueryData(['mail-body', mail.id], (oldData: unknown) => {
       if (!oldData) return oldData
       return { ...oldData, readAt: new Date().toISOString() }
     })
@@ -108,7 +118,6 @@ export function EmailTab({
     e.preventDefault()
 
     setMailIsRead(true)
-
     updateMailReadStatus()
 
     mixpanel.track('Go To Mail', {
@@ -130,9 +139,9 @@ export function EmailTab({
     >
       <div
         className={cn(
-          'group relative flex flex-col gap-1 border-b p-4 transition-all hover:bg-blue-50 sm:flex-row sm:items-center sm:gap-4',
-          !mailIsRead && 'bg-gray-50',
-          isSelected && 'bg-blue-50'
+          'group relative flex flex-col gap-1 border-b border-border p-4 transition-all hover:bg-blue-base/5 hover:elevation-1 sm:flex-row sm:items-center sm:gap-4',
+          !mailIsRead && 'bg-accent',
+          isSelected && 'bg-blue-base/10 border-l-2 border-l-blue-base'
         )}
       >
         <div className="flex items-center gap-3">
@@ -147,14 +156,15 @@ export function EmailTab({
               onCheckedChange={() => onSelect(mail)}
             />
           </div>
+
           <div className="relative flex-shrink-0">
             <img
               src={renderActorImageUrl}
-              alt={mail.sender.suimailNs || generateRandomId()}
-              className="h-9 w-9 rounded-full object-cover overflow-hidden"
+              alt={mail.sender?.suimailNs || generateRandomId()}
+              className="h-9 w-9 rounded-full object-cover border-2 border-white shadow-sm ring-1 ring-border"
             />
             {!mailIsRead && (
-              <span className="absolute right-0 top-0 h-2.5 w-2.5 rounded-full bg-blue-500" />
+              <span className="absolute right-0 top-0 h-2.5 w-2.5 rounded-full bg-blue-base ring-2 ring-background" />
             )}
           </div>
         </div>
@@ -163,15 +173,15 @@ export function EmailTab({
           <div className="flex items-center justify-between gap-2">
             <p
               className={cn(
-                'truncate text-sm text-gray-600',
-                !mailIsRead && 'font-medium text-gray-900'
+                'truncate text-sm text-muted-foreground',
+                !mailIsRead && 'font-semibold text-foreground'
               )}
             >
               {renderActorSuimailNs}
             </p>
             <div className="flex items-center gap-2">
               <time
-                className="flex items-center whitespace-nowrap text-xs text-gray-400"
+                className="flex items-center whitespace-nowrap text-xs text-muted-foreground"
                 dateTime={mail.createdAt}
               >
                 <Calendar className="mr-1 h-3 w-3" />
@@ -182,10 +192,11 @@ export function EmailTab({
               </time>
             </div>
           </div>
+
           <h3
             className={cn(
-              'line-clamp-1 text-sm text-gray-600',
-              !mailIsRead && 'font-medium text-gray-900'
+              'line-clamp-1 text-sm text-muted-foreground',
+              !mailIsRead && 'font-medium text-foreground'
             )}
           >
             {mail.subject}
