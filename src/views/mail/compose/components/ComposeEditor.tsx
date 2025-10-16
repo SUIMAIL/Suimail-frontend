@@ -65,25 +65,74 @@ export const ComposeEditor = ({
           toolbar:
             'undo redo | blocks fontsize | bold italic underline | link table | align | checklist numlist bullist | emoticons charmap | removeformat',
 
-          // 🌙 Dark mode support
+          // Dark mode support
           skin: isDarkMode ? 'oxide-dark' : 'oxide',
           content_css: isDarkMode ? 'dark' : 'default',
 
-          // Custom background/text colors
+          // Custom styling following your design system
           content_style: `
             body {
-              background-color: ${isDarkMode ? '#1f2937' : '#ffffff'};
-              color: ${isDarkMode ? '#f9fafb' : '#111827'};
+              background-color: ${isDarkMode ? 'oklch(0.15 0.01 250)' : 'oklch(0.99 0 0)'};
+              color: ${isDarkMode ? 'oklch(0.97 0 0)' : 'oklch(0.2 0 0)'};
               font-family: -apple-system, BlinkMacSystemFont, San Francisco, Segoe UI, Roboto, Helvetica Neue, sans-serif;
               font-size: 14px;
               line-height: 1.6;
-              padding: 10px;
+              padding: 12px;
             }
-            a { 
-              color: ${isDarkMode ? '#60a5fa' : '#3b82f6'}; 
+            
+            /* Links using your blue system */
+            a {
+              color: ${isDarkMode ? 'oklch(0.65 0.18 250)' : 'oklch(0.6 0.2 250)'};
+              text-decoration: underline;
             }
-            a:hover { 
-              color: ${isDarkMode ? '#93c5fd' : '#2563eb'}; 
+            
+            a:hover {
+              color: ${isDarkMode ? 'oklch(0.7 0.19 250)' : 'oklch(0.65 0.21 250)'};
+            }
+            
+            /* Selection color */
+            ::selection {
+              background-color: ${isDarkMode ? 'oklch(0.55 0.2 250 / 0.3)' : 'oklch(0.6 0.2 250 / 0.2)'};
+            }
+            
+            /* Blockquotes */
+            blockquote {
+              border-left: 3px solid ${isDarkMode ? 'oklch(0.55 0.2 250)' : 'oklch(0.6 0.2 250)'};
+              padding-left: 12px;
+              margin-left: 0;
+              color: ${isDarkMode ? 'oklch(0.7 0 0)' : 'oklch(0.45 0 0)'};
+            }
+            
+            /* Code blocks */
+            code {
+              background-color: ${isDarkMode ? 'oklch(0.18 0.01 250)' : 'oklch(0.97 0 0)'};
+              padding: 2px 6px;
+              border-radius: 4px;
+              font-family: 'SF Mono', Monaco, 'Cascadia Code', 'Roboto Mono', Consolas, 'Courier New', monospace;
+              font-size: 13px;
+            }
+            
+            pre {
+              background-color: ${isDarkMode ? 'oklch(0.18 0.01 250)' : 'oklch(0.97 0 0)'};
+              padding: 12px;
+              border-radius: 8px;
+              overflow-x: auto;
+            }
+            
+            /* Tables */
+            table {
+              border-collapse: collapse;
+              width: 100%;
+            }
+            
+            table td, table th {
+              border: 1px solid ${isDarkMode ? 'oklch(0.25 0.01 250)' : 'oklch(0.9 0 0)'};
+              padding: 8px;
+            }
+            
+            table th {
+              background-color: ${isDarkMode ? 'oklch(0.18 0.01 250)' : 'oklch(0.94 0 0)'};
+              font-weight: 600;
             }
           `,
 

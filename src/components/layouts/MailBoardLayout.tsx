@@ -1,8 +1,6 @@
 import { Navigate, Outlet, useLocation } from 'react-router-dom'
 import { AppSidebar } from '../AppSidebar'
 import { ComposeButton } from '../ComposeButton'
-import { FeedbackButton } from '../Feedback'
-
 import { useGetAuthUserQuery } from '@/hooks/auth'
 import { Loading } from '../Loading'
 import useMediaQuery from '@/hooks/useMediaQuery'
@@ -17,22 +15,15 @@ const MailBoardLayout = () => {
 
   const isMobile = useMediaQuery('(max-width: 768px)')
 
-  // Only show ComposeButton and floating FeedbackButton on these mail pages
-  const allowedMailPages = useMemo(
-    () => ['/mail/inbox', '/mail/outbox', '/mail/drafts', '/mail/trash'],
-    []
-  )
-  const showComposeButton = useMemo(
-    () => allowedMailPages.includes(pathname),
-    [pathname, allowedMailPages]
-  )
-  const showFloatingFeedback = useMemo(
-    () => allowedMailPages.includes(pathname),
-    [pathname, allowedMailPages]
-  )
-
+  // Hide buttons only on specific pages where they would interfere
   const isComposePage = useMemo(() => pathname === '/mail/compose', [pathname])
   const isHelpPage = useMemo(() => pathname === '/account/help', [pathname])
+
+  // Show buttons on all pages EXCEPT compose and help pages
+  const showButtons = useMemo(
+    () => !isComposePage && !isHelpPage,
+    [isComposePage, isHelpPage]
+  )
 
   const { open, setOpen } = useLogoutModal()
 
@@ -47,24 +38,20 @@ const MailBoardLayout = () => {
       <AppSidebar />
       <main className="relative flex-1">
         <Outlet />
-        {isMobile && !isComposePage && !isHelpPage && showFloatingFeedback && (
+        {isMobile && showButtons && (
           <div
             style={{
               position: 'fixed',
               bottom: 24,
               right: 24,
-              display: showComposeButton ? 'flex' : undefined,
-              flexDirection: showComposeButton ? 'column' : undefined,
-              gap: showComposeButton ? 0 : undefined,
+              display: 'flex',
+              flexDirection: 'column',
+              gap: 8,
               zIndex: 50,
             }}
           >
             <FeedbackButton />
-            {showComposeButton && (
-              <div style={{ marginTop: 2 }}>
-                <ComposeButton />
-              </div>
-            )}
+            <ComposeButton />
           </div>
         )}
         {!isMobile && <FeedbackButton />}

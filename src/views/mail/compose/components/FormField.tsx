@@ -78,14 +78,14 @@ export const FormField = ({
             id={name}
             rows={rows}
             {...commonProps}
-            className="surface-base border-border text-foreground placeholder:text-muted-foreground focus:ring-blue-base resize-none"
+            className={`surface-base border-border text-foreground placeholder:text-muted-foreground focus:ring-blue-base resize-none ${className ?? ''}`}
           />
         ) : (
           <Input
             id={name}
             type={type}
             {...commonProps}
-            className="surface-base border-border text-foreground placeholder:text-muted-foreground focus:ring-blue-base"
+            className={`surface-base border-border text-foreground placeholder:text-muted-foreground focus:ring-blue-base ${className ?? ''}`}
           />
         )}
         {extendAction && extendAction}
