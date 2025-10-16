@@ -6,11 +6,15 @@ import { Input } from './ui/input'
 import { Button } from './ui/button'
 import { SidebarTrigger } from './ui/sidebar'
 
+import type { IEmail } from '@/types/generic'
+
 interface ExtendedToolbarProps {
   canGoBack?: boolean
   isSticky?: boolean
   getPageTitle?: () => string
   addCTA?: React.ReactNode
+  onSearchResults?: (results: IEmail[]) => void
+  onSearchClose?: () => void
 }
 
 export function ExtendedToolbar({

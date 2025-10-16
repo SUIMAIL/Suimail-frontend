@@ -35,7 +35,6 @@ export default function InboxPage() {
     <PageLayout loading={isFetching} isError={isError}>
       <ExtendedToolbar
         getPageTitle={() => (isSearchActive ? 'Search Results' : 'Inbox')}
-        currentFolder="inbox"
         onSearchResults={handleSearchResults}
         onSearchClose={handleSearchClose}
       />
