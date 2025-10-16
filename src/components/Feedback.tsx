@@ -1,4 +1,4 @@
-import { useState, useEffect, useRef } from 'react'
+import { useState, useEffect, useRef, useCallback } from 'react'
 import { MessageSquare, X, Move } from 'lucide-react'
 
 export const FeedbackButton = () => {
@@ -89,7 +89,57 @@ export const FeedbackButton = () => {
     return () => document.removeEventListener('keydown', handleEsc)
   }, [isOpen])
 
-  // Drag functionality
+  // Drag functionality - wrapped in useCallback
+  const handleMouseMove = useCallback(
+    (e: MouseEvent) => {
+      if (!isDragging || isOpen) return
+
+      const viewportWidth = window.innerWidth
+      const viewportHeight = window.innerHeight
+      const buttonSize = isMobile ? 56 : 64 // Approximate button size
+
+      let newX = e.clientX - dragOffset.current.x
+      let newY = e.clientY - dragOffset.current.y
+
+      // Keep button within viewport bounds
+      newX = Math.max(16, Math.min(newX, viewportWidth - buttonSize - 16))
+      newY = Math.max(16, Math.min(newY, viewportHeight - buttonSize - 16))
+
+      setPosition({ x: newX, y: newY })
+    },
+    [isDragging, isOpen, isMobile]
+  )
+
+  const handleTouchMove = useCallback(
+    (e: TouchEvent) => {
+      if (!isDragging || isOpen) return
+
+      const touch = e.touches[0]
+      const viewportWidth = window.innerWidth
+      const viewportHeight = window.innerHeight
+      const buttonSize = isMobile ? 56 : 64
+
+      let newX = touch.clientX - dragOffset.current.x
+      let newY = touch.clientY - dragOffset.current.y
+
+      // Keep button within viewport bounds
+      newX = Math.max(16, Math.min(newX, viewportWidth - buttonSize - 16))
+      newY = Math.max(16, Math.min(newY, viewportHeight - buttonSize - 16))
+
+      setPosition({ x: newX, y: newY })
+      e.preventDefault()
+    },
+    [isDragging, isOpen, isMobile]
+  )
+
+  const handleMouseUp = useCallback(() => {
+    setIsDragging(false)
+  }, [])
+
+  const handleTouchEnd = useCallback(() => {
+    setIsDragging(false)
+  }, [])
+
   const handleMouseDown = (e: React.MouseEvent) => {
     if (isOpen || !buttonRef.current) return
 
@@ -115,50 +165,6 @@ export const FeedbackButton = () => {
     e.preventDefault()
   }
 
-  const handleMouseMove = (e: MouseEvent) => {
-    if (!isDragging || isOpen) return
-
-    const viewportWidth = window.innerWidth
-    const viewportHeight = window.innerHeight
-    const buttonSize = isMobile ? 56 : 64 // Approximate button size
-
-    let newX = e.clientX - dragOffset.current.x
-    let newY = e.clientY - dragOffset.current.y
-
-    // Keep button within viewport bounds
-    newX = Math.max(16, Math.min(newX, viewportWidth - buttonSize - 16))
-    newY = Math.max(16, Math.min(newY, viewportHeight - buttonSize - 16))
-
-    setPosition({ x: newX, y: newY })
-  }
-
-  const handleTouchMove = (e: TouchEvent) => {
-    if (!isDragging || isOpen) return
-
-    const touch = e.touches[0]
-    const viewportWidth = window.innerWidth
-    const viewportHeight = window.innerHeight
-    const buttonSize = isMobile ? 56 : 64
-
-    let newX = touch.clientX - dragOffset.current.x
-    let newY = touch.clientY - dragOffset.current.y
-
-    // Keep button within viewport bounds
-    newX = Math.max(16, Math.min(newX, viewportWidth - buttonSize - 16))
-    newY = Math.max(16, Math.min(newY, viewportHeight - buttonSize - 16))
-
-    setPosition({ x: newX, y: newY })
-    e.preventDefault()
-  }
-
-  const handleMouseUp = () => {
-    setIsDragging(false)
-  }
-
-  const handleTouchEnd = () => {
-    setIsDragging(false)
-  }
-
   // Add global event listeners for drag
   useEffect(() => {
     if (isDragging) {
@@ -176,7 +182,13 @@ export const FeedbackButton = () => {
         document.removeEventListener('touchend', handleTouchEnd)
       }
     }
-  }, [isDragging, isMobile])
+  }, [
+    isDragging,
+    handleMouseMove,
+    handleMouseUp,
+    handleTouchMove,
+    handleTouchEnd,
+  ])
 
   const handleBackdropClick = (e: React.MouseEvent) => {
     if (e.target === e.currentTarget) {

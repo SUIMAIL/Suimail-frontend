@@ -1,6 +1,8 @@
 import { useState, useEffect, useMemo } from 'react'
 import type { IEmail } from '@/types/generic'
 import { useLocation, useNavigate, useParams } from 'react-router-dom'
+import { useGetUserProfileImageQuery } from '@/hooks/user'
+
 import {
   ArrowLeft,
   Trash2,
@@ -9,12 +11,11 @@ import {
   ChevronDown,
   ChevronRight,
   MoreVertical,
-  Star,
-  Archive,
-  Forward,
+  User,
 } from 'lucide-react'
 import { Loading } from '@/components/Loading'
 import { Button } from '@/components/ui/button'
+import { Skeleton } from '@/components/ui/skeleton'
 import {
   usePostDeleteMailMutation,
   usePostSendMailMutation,
@@ -22,7 +23,6 @@ import {
 import { useFetchMailBodyQuery } from '@/hooks/mail'
 import { useSuiClientQuery } from '@mysten/dapp-kit'
 import MailNotFound from '@/components/MailNotFound'
-import { SimpleAvatar } from '@/components/ui/SimpleAvatar'
 import { useClaimEscrowTx } from '../../../hooks/ptb/claim-escrow-tx'
 import { useToastContext } from '@/components/ui/toast'
 import { useQueryClient } from '@tanstack/react-query'
@@ -36,37 +36,50 @@ const QuotedMessage = ({
   email,
   isExpanded,
   onToggle,
+  profileImage,
+  isLoadingProfileImage,
 }: {
   email: IEmail
   isExpanded: boolean
   onToggle: () => void
+  profileImage?: string
+  isLoadingProfileImage: boolean
 }) => {
   return (
-    <div className="border border-gray-200 rounded-lg mb-4 bg-gray-50">
+    <div className="border border-border rounded-lg mb-4 surface-dark elevation-1">
       {/* Collapsed header */}
       <div
-        className="flex items-center justify-between p-3 cursor-pointer hover:bg-gray-100 transition-colors"
+        className="flex items-center justify-between p-3 cursor-pointer hover:bg-accent transition-colors"
         onClick={onToggle}
       >
         <div className="flex items-center space-x-3 min-w-0 flex-1">
           <div className="flex-shrink-0">
             {isExpanded ? (
-              <ChevronDown className="h-4 w-4 text-gray-500" />
+              <ChevronDown className="h-4 w-4 text-muted-foreground" />
             ) : (
-              <ChevronRight className="h-4 w-4 text-gray-500" />
+              <ChevronRight className="h-4 w-4 text-muted-foreground" />
             )}
           </div>
-          <SimpleAvatar
-            initials={email.sender.suimailNs?.[0]?.toUpperCase() || '?'}
-            size="sm"
-          />
+          {isLoadingProfileImage ? (
+            <Skeleton className="w-10 h-10 rounded-full" />
+          ) : profileImage ? (
+            <img
+              src={profileImage}
+              alt={email.sender.suimailNs || 'User'}
+              className="w-10 h-10 rounded-full object-cover border-2 border-border shadow-sm"
+            />
+          ) : (
+            <div className="flex items-center justify-center w-10 h-10 rounded-full surface-base border border-border">
+              <User className="size-6 text-muted-foreground" />
+            </div>
+          )}
+
           <div className="min-w-0 flex-1">
             <div className="flex items-center space-x-2">
-              <span className="text-sm font-medium text-gray-900 truncate">
+              <span className="text-sm font-medium text-foreground truncate">
                 {email.sender.suimailNs}
               </span>
-              <span className="text-xs text-gray-500 flex-shrink-0">
-                {/* Inline quotedFormatDate to avoid TS error */}
+              <span className="text-xs text-muted-foreground flex-shrink-0">
                 {(() => {
                   const date = new Date(email.createdAt)
                   const now = new Date()
@@ -86,8 +99,7 @@ const QuotedMessage = ({
               </span>
             </div>
             {!isExpanded && (
-              <div className="text-xs text-gray-500 truncate mt-1">
-                {/* Strip HTML tags for preview */}
+              <div className="text-xs text-muted-foreground truncate mt-1">
                 {email.body.replace(/<[^>]*>/g, '').substring(0, 100)}...
               </div>
             )}
@@ -97,44 +109,42 @@ const QuotedMessage = ({
           <Button
             size="icon"
             variant="ghost"
-            className="p-1 h-6 w-6 rounded-full hover:bg-gray-200"
+            className="p-1 h-6 w-6 rounded-full hover:bg-accent"
             onClick={e => {
               e.stopPropagation()
-              // Handle star action
             }}
           >
-            <Star className="h-3 w-3 text-gray-400" />
-          </Button>
-          <Button
-            size="icon"
-            variant="ghost"
-            className="p-1 h-6 w-6 rounded-full hover:bg-gray-200"
-            onClick={e => {
-              e.stopPropagation()
-              // Handle more options
-            }}
-          >
-            <MoreVertical className="h-3 w-3 text-gray-400" />
+            <MoreVertical className="h-3 w-3 text-muted-foreground" />
           </Button>
         </div>
       </div>
 
       {/* Expanded content */}
       {isExpanded && (
-        <div className="border-t border-gray-200 bg-white">
+        <div className="border-t border-border surface-light">
           {/* Full email header */}
-          <div className="p-4 border-b border-gray-100 bg-gray-50">
+          <div className="p-4 border-b border-border surface-dark">
             <div className="flex items-start justify-between">
               <div className="flex items-start space-x-3">
-                <SimpleAvatar
-                  initials={email.sender.suimailNs?.[0]?.toUpperCase() || '?'}
-                  size="md"
-                />
+                {isLoadingProfileImage ? (
+                  <Skeleton className="w-10 h-10 rounded-full" />
+                ) : profileImage ? (
+                  <img
+                    src={profileImage}
+                    alt={email.sender.suimailNs || 'User'}
+                    className="w-10 h-10 rounded-full object-cover border-2 border-border shadow-sm"
+                  />
+                ) : (
+                  <div className="flex items-center justify-center w-10 h-10 rounded-full surface-base border border-border">
+                    <User className="size-6 text-muted-foreground" />
+                  </div>
+                )}
+
                 <div>
-                  <div className="font-medium text-gray-900">
+                  <div className="font-medium text-foreground">
                     {email.sender.suimailNs}
                   </div>
-                  <div className="text-sm text-gray-500 mt-1">
+                  <div className="text-sm text-muted-foreground mt-1">
                     <div>to me</div>
                     <div className="mt-1">
                       {new Date(email.createdAt).toLocaleDateString('en-US', {
@@ -155,21 +165,9 @@ const QuotedMessage = ({
                     <Button
                       size="icon"
                       variant="ghost"
-                      className="p-2 h-8 w-8 rounded-full hover:bg-gray-200"
+                      className="p-2 h-8 w-8 rounded-full hover:bg-accent"
                     >
-                      <Star className="h-4 w-4 text-gray-400" />
-                    </Button>
-                  </TooltipTrigger>
-                  <TooltipContent>Add to starred</TooltipContent>
-                </Tooltip>
-                <Tooltip>
-                  <TooltipTrigger asChild>
-                    <Button
-                      size="icon"
-                      variant="ghost"
-                      className="p-2 h-8 w-8 rounded-full hover:bg-gray-200"
-                    >
-                      <Reply className="h-4 w-4 text-gray-400" />
+                      <Reply className="h-4 w-4 text-muted-foreground" />
                     </Button>
                   </TooltipTrigger>
                   <TooltipContent>Reply</TooltipContent>
@@ -179,9 +177,9 @@ const QuotedMessage = ({
                     <Button
                       size="icon"
                       variant="ghost"
-                      className="p-2 h-8 w-8 rounded-full hover:bg-gray-200"
+                      className="p-2 h-8 w-8 rounded-full hover:bg-accent"
                     >
-                      <MoreVertical className="h-4 w-4 text-gray-400" />
+                      <MoreVertical className="h-4 w-4 text-muted-foreground" />
                     </Button>
                   </TooltipTrigger>
                   <TooltipContent>More options</TooltipContent>
@@ -238,6 +236,13 @@ export default function EmailViewPage() {
     () =>
       data?.objectChanges?.find(change => change.type === 'created')?.objectId,
     [data?.objectChanges]
+  )
+
+  const { data: profileImageData, isPending: isLoadingProfileImage } =
+    useGetUserProfileImageQuery()
+  const profileImage = useMemo(
+    () => profileImageData?.imageUrl,
+    [profileImageData]
   )
 
   // Build thread by following parentMailId
@@ -387,24 +392,24 @@ export default function EmailViewPage() {
   if (!latestMail) return null
 
   return (
-    <div className="min-h-screen flex flex-col bg-white">
-      <div className="flex-1 flex flex-col bg-white border-l border-gray-200 shadow-sm z-20 overflow-hidden">
-        {/* Enhanced Header */}
-        <div className="sticky top-0 z-10 bg-white border-b border-gray-200">
+    <div className="min-h-screen flex flex-col surface-base">
+      <div className="flex-1 flex flex-col surface-light border-l border-border elevation-1 z-20 overflow-hidden">
+        {/* Header */}
+        <div className="sticky top-0 z-10 surface-light border-b border-border elevation-2">
           <div className="flex items-center justify-between p-4">
             <div className="flex items-center min-w-0 flex-1">
               <Button
                 variant="ghost"
-                className="mr-3 p-2 hover:bg-gray-100 transition-colors flex-shrink-0"
+                className="mr-3 p-2 hover:bg-accent transition-colors flex-shrink-0"
                 onClick={() => navigate(-1)}
               >
-                <ArrowLeft className="h-5 w-5 text-gray-600" />
+                <ArrowLeft className="h-5 w-5 text-foreground" />
               </Button>
-              <h1 className="text-xl font-medium text-gray-900 truncate">
+              <h1 className="text-xl font-semibold text-foreground truncate">
                 {latestMail.subject}
               </h1>
               {thread.length > 1 && (
-                <span className="ml-2 px-2 py-1 bg-gray-100 text-xs text-gray-600 rounded-full flex-shrink-0">
+                <span className="ml-2 px-2 py-1 surface-dark text-xs text-muted-foreground rounded-full flex-shrink-0 border border-border">
                   {thread.length} messages
                 </span>
               )}
@@ -416,27 +421,14 @@ export default function EmailViewPage() {
                   <Button
                     size="icon"
                     variant="ghost"
-                    className="p-2 rounded-full hover:bg-gray-100 transition-colors"
-                  >
-                    <Archive className="h-4 w-4 text-gray-500" />
-                  </Button>
-                </TooltipTrigger>
-                <TooltipContent>Archive</TooltipContent>
-              </Tooltip>
-
-              <Tooltip>
-                <TooltipTrigger asChild>
-                  <Button
-                    size="icon"
-                    variant="ghost"
-                    className="p-2 rounded-full hover:bg-gray-100 transition-colors"
+                    className="p-2 rounded-full hover:bg-destructive/10 hover:text-destructive transition-colors touch-target"
                     onClick={handleDeleteMail}
                     disabled={isDeleting}
                   >
                     {isDeleting ? (
-                      <Loader2 className="h-4 w-4 text-gray-400 animate-spin" />
+                      <Loader2 className="h-4 w-4 animate-spin" />
                     ) : (
-                      <Trash2 className="h-4 w-4 text-gray-500" />
+                      <Trash2 className="h-4 w-4" />
                     )}
                   </Button>
                 </TooltipTrigger>
@@ -448,11 +440,11 @@ export default function EmailViewPage() {
                   <Button
                     size="icon"
                     variant="ghost"
-                    className="p-2 rounded-full hover:bg-gray-100 transition-colors"
+                    className="p-2 rounded-full hover:bg-blue-base/10 hover:text-blue-base transition-colors touch-target"
                     onClick={handleReply}
                     disabled={isReplying}
                   >
-                    <Reply className="h-4 w-4 text-gray-500" />
+                    <Reply className="h-4 w-4" />
                   </Button>
                 </TooltipTrigger>
                 <TooltipContent>Reply</TooltipContent>
@@ -463,22 +455,9 @@ export default function EmailViewPage() {
                   <Button
                     size="icon"
                     variant="ghost"
-                    className="p-2 rounded-full hover:bg-gray-100 transition-colors"
+                    className="p-2 rounded-full hover:bg-accent transition-colors touch-target"
                   >
-                    <Forward className="h-4 w-4 text-gray-500" />
-                  </Button>
-                </TooltipTrigger>
-                <TooltipContent>Forward</TooltipContent>
-              </Tooltip>
-
-              <Tooltip>
-                <TooltipTrigger asChild>
-                  <Button
-                    size="icon"
-                    variant="ghost"
-                    className="p-2 rounded-full hover:bg-gray-100 transition-colors"
-                  >
-                    <MoreVertical className="h-4 w-4 text-gray-500" />
+                    <MoreVertical className="h-4 w-4 text-muted-foreground" />
                   </Button>
                 </TooltipTrigger>
                 <TooltipContent>More actions</TooltipContent>
@@ -486,35 +465,37 @@ export default function EmailViewPage() {
             </div>
           </div>
 
-          {/* Sui-specific action buttons */}
+          {/* Claim Airdrop Button */}
           {latestMail.digest && (
             <div className="flex items-center px-4 pb-3 space-x-2">
               <button
                 onClick={handleClaimSui}
-                className="flex items-center px-4 py-2 rounded-lg bg-gradient-to-r from-blue-500 to-blue-600 text-white text-sm font-medium hover:from-blue-600 hover:to-blue-700 transition-all duration-200 shadow-sm hover:shadow-md"
+                className="flex items-center px-4 py-2 rounded-lg bg-blue-base text-white text-sm font-medium hover:bg-blue-dark transition-all duration-200 elevation-2 hover:shadow-hover touch-target"
               >
                 <div className="w-2 h-2 bg-white rounded-full mr-2 animate-pulse"></div>
                 Claim Airdrop
               </button>
-              <div className="text-xs text-gray-500">
+              <div className="text-xs text-muted-foreground">
                 Transaction: {latestMail.digest.substring(0, 12)}...
               </div>
             </div>
           )}
         </div>
 
-        {/* Email Content Area - Remove fixed height, use flex-1 */}
-        <div className="flex-1 overflow-y-auto">
+        {/* Email Content Area */}
+        <div className="flex-1 overflow-y-auto smooth-scroll">
           <div className="max-w-4xl mx-auto">
             {/* Quoted/Previous Messages */}
             {quotedMessages.length > 0 && (
-              <div className="p-6 space-y-3">
+              <div className="p-4 sm:p-6 space-y-3">
                 {quotedMessages.reverse().map(email => (
                   <QuotedMessage
                     key={email.id}
                     email={email}
                     isExpanded={expandedQuotes.has(email.id)}
                     onToggle={() => toggleQuotedMessage(email.id)}
+                    profileImage={profileImage}
+                    isLoadingProfileImage={isLoadingProfileImage}
                   />
                 ))}
               </div>
@@ -522,27 +503,35 @@ export default function EmailViewPage() {
 
             {/* Latest/Current Message */}
             {latestMail && (
-              <div className="border-b border-gray-100 bg-white">
+              <div className="border-b border-border surface-light">
                 {/* Message Header */}
-                <div className="p-6 pb-4">
+                <div className="p-4 sm:p-6 pb-4">
                   <div className="flex items-start justify-between mb-4">
                     <div className="flex items-start space-x-4">
-                      <SimpleAvatar
-                        initials={
-                          latestMail.sender.suimailNs?.[0]?.toUpperCase() || '?'
-                        }
-                        size="lg"
-                      />
+                      {isLoadingProfileImage ? (
+                        <Skeleton className="w-12 h-12 rounded-full" />
+                      ) : profileImage ? (
+                        <img
+                          src={profileImage}
+                          alt="User"
+                          className="w-12 h-12 rounded-full object-cover border-2 border-border shadow-sm"
+                        />
+                      ) : (
+                        <div className="flex items-center justify-center w-12 h-12 rounded-full surface-base border border-border">
+                          <User className="size-6 text-muted-foreground" />
+                        </div>
+                      )}
+
                       <div className="min-w-0 flex-1">
                         <div className="flex items-center space-x-2 mb-1">
-                          <h2 className="text-lg font-semibold text-gray-900">
+                          <h2 className="text-lg font-semibold text-foreground">
                             {latestMail.sender.suimailNs}
                           </h2>
-                          <span className="px-2 py-1 bg-green-100 text-green-800 text-xs font-medium rounded-full">
+                          <span className="px-2 py-1 bg-blue-base/10 text-blue-base text-xs font-medium rounded-full border border-blue-base/20">
                             Verified
                           </span>
                         </div>
-                        <div className="text-sm text-gray-600 space-y-1">
+                        <div className="text-sm text-muted-foreground space-y-1">
                           <div>
                             <span className="font-medium">to</span> me
                           </div>
@@ -559,8 +548,8 @@ export default function EmailViewPage() {
                                 minute: '2-digit',
                               })}
                             </span>
-                            <span className="text-gray-400">•</span>
-                            <span className="text-gray-500">
+                            <span className="text-muted-foreground/50">•</span>
+                            <span className="text-muted-foreground">
                               Via Sui Blockchain
                             </span>
                           </div>
@@ -575,24 +564,11 @@ export default function EmailViewPage() {
                           <Button
                             size="icon"
                             variant="ghost"
-                            className="p-2 rounded-full hover:bg-gray-100 transition-colors"
-                          >
-                            <Star className="h-5 w-5 text-gray-400" />
-                          </Button>
-                        </TooltipTrigger>
-                        <TooltipContent>Star this conversation</TooltipContent>
-                      </Tooltip>
-
-                      <Tooltip>
-                        <TooltipTrigger asChild>
-                          <Button
-                            size="icon"
-                            variant="ghost"
-                            className="p-2 rounded-full hover:bg-gray-100 transition-colors"
+                            className="p-2 rounded-full hover:bg-blue-base/10 hover:text-blue-base transition-colors"
                             onClick={handleReply}
                             disabled={isReplying}
                           >
-                            <Reply className="h-5 w-5 text-gray-400" />
+                            <Reply className="h-5 w-5" />
                           </Button>
                         </TooltipTrigger>
                         <TooltipContent>Reply</TooltipContent>
@@ -603,9 +579,9 @@ export default function EmailViewPage() {
                           <Button
                             size="icon"
                             variant="ghost"
-                            className="p-2 rounded-full hover:bg-gray-100 transition-colors"
+                            className="p-2 rounded-full hover:bg-accent transition-colors"
                           >
-                            <MoreVertical className="h-5 w-5 text-gray-400" />
+                            <MoreVertical className="h-5 w-5 text-muted-foreground" />
                           </Button>
                         </TooltipTrigger>
                         <TooltipContent>More options</TooltipContent>
@@ -615,14 +591,14 @@ export default function EmailViewPage() {
                 </div>
 
                 {/* Message Body */}
-                <div className="px-6 pb-6">
+                <div className="px-4 sm:px-6 pb-6">
                   <EmailBodyFormatter body={latestMail.body} />
 
                   {/* Attachments */}
                   {latestMail.attachments &&
                     latestMail.attachments.length > 0 && (
-                      <div className="mt-6 p-4 bg-gray-50 rounded-lg border border-gray-200">
-                        <div className="text-sm font-medium text-gray-700 mb-3">
+                      <div className="mt-6 p-4 surface-dark rounded-lg border border-border elevation-1">
+                        <div className="text-sm font-medium text-foreground mb-3">
                           {latestMail.attachments.length} attachment
                           {latestMail.attachments.length > 1 ? 's' : ''}
                         </div>
@@ -634,15 +610,15 @@ export default function EmailViewPage() {
 
                   {/* Blockchain info */}
                   {latestMail.digest && (
-                    <div className="mt-6 p-4 bg-blue-50 rounded-lg border border-blue-200">
+                    <div className="mt-6 p-4 bg-blue-base/10 rounded-lg border border-blue-base/20">
                       <div className="flex items-center justify-between">
                         <div className="text-sm">
-                          <div className="font-medium text-blue-900 mb-1">
+                          <div className="font-medium text-blue-base mb-1">
                             Blockchain Verified
                           </div>
-                          <div className="text-blue-700">
+                          <div className="text-muted-foreground">
                             Transaction:{' '}
-                            <code className="bg-blue-100 px-2 py-1 rounded text-xs">
+                            <code className="surface-dark px-2 py-1 rounded text-xs">
                               {latestMail.digest}
                             </code>
                           </div>
@@ -650,7 +626,7 @@ export default function EmailViewPage() {
                         <Button
                           onClick={handleClaimSui}
                           size="sm"
-                          className="bg-blue-600 hover:bg-blue-700 text-white"
+                          className="bg-blue-base hover:bg-blue-dark text-white"
                         >
                           View on Explorer
                         </Button>
@@ -663,50 +639,34 @@ export default function EmailViewPage() {
           </div>
         </div>
 
-        {/* Reply Area - Move outside scrollable content and remove sticky positioning */}
+        {/* Quick Reply Area */}
         {!isReplying && (
-          <div className="bg-white border-t border-gray-200 shadow-lg">
+          <div className="surface-light border-t border-border elevation-2">
             <div className="max-w-4xl mx-auto p-4">
               <div className="flex items-center space-x-4">
-                <SimpleAvatar initials="ME" size="sm" />
+                {isLoadingProfileImage ? (
+                  <Skeleton className="w-8 h-8 rounded-full" />
+                ) : profileImage ? (
+                  <img
+                    src={profileImage}
+                    alt="Me"
+                    className="w-8 h-8 rounded-full object-cover border-2 border-border shadow-sm"
+                  />
+                ) : (
+                  <div className="flex items-center justify-center w-8 h-8 rounded-full surface-base border border-border">
+                    <User className="size-5 text-muted-foreground" />
+                  </div>
+                )}
                 <div
-                  className="flex-1 rounded-lg border border-gray-300 px-4 py-3 bg-white hover:bg-gray-50 cursor-pointer transition-colors shadow-sm"
+                  className="flex-1 rounded-lg border border-border px-4 py-3 surface-base hover:bg-accent cursor-pointer transition-colors elevation-1 hover:elevation-2"
                   onClick={handleQuickReply}
                 >
                   <div className="flex items-center justify-between">
-                    <span className="text-gray-500 text-sm">
+                    <span className="text-muted-foreground text-sm">
                       Click here to reply to {latestMail.sender.suimailNs}...
                     </span>
-                    <Reply className="h-4 w-4 text-gray-400" />
+                    <Reply className="h-4 w-4 text-muted-foreground" />
                   </div>
-                </div>
-                <div className="flex space-x-2">
-                  <Tooltip>
-                    <TooltipTrigger asChild>
-                      <Button
-                        size="icon"
-                        variant="outline"
-                        className="p-2 rounded-full hover:bg-gray-100 transition-colors"
-                        onClick={handleReply}
-                      >
-                        <Reply className="h-4 w-4 text-gray-400" />
-                      </Button>
-                    </TooltipTrigger>
-                    <TooltipContent>Reply</TooltipContent>
-                  </Tooltip>
-
-                  <Tooltip>
-                    <TooltipTrigger asChild>
-                      <Button
-                        size="icon"
-                        variant="outline"
-                        className="p-2 rounded-full hover:bg-gray-100 transition-colors"
-                      >
-                        <Forward className="h-4 w-4 text-gray-400" />
-                      </Button>
-                    </TooltipTrigger>
-                    <TooltipContent>Forward</TooltipContent>
-                  </Tooltip>
                 </div>
               </div>
             </div>

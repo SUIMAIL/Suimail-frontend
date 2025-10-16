@@ -1,7 +1,8 @@
-import { useState, useEffect, useRef } from 'react'
+import { useState, useEffect, useRef, useCallback } from 'react'
 import { X, Send, Loader2, ChevronDown } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import { Editor } from '@tinymce/tinymce-react'
+import type { Editor as TinyMCEEditor } from 'tinymce'
 import type { IEmail } from '@/types/generic'
 
 interface ReplyComposerProps {
@@ -28,7 +29,7 @@ export function ReplyComposer({
   const [replyBody, setReplyBody] = useState('')
   const [error, setError] = useState('')
   const [showQuotedMessage, setShowQuotedMessage] = useState(false)
-  const editorRef = useRef<any>(null)
+  const editorRef = useRef<TinyMCEEditor | null>(null)
 
   useEffect(() => {
     if (isVisible && editorRef.current) {
@@ -53,7 +54,7 @@ export function ReplyComposer({
     ? originalEmail.subject
     : `Re: ${originalEmail.subject}`
 
-  const handleSend = async () => {
+  const handleSend = useCallback(async () => {
     const bodyText = editorRef.current?.getContent({ format: 'text' }) || ''
     const bodyHtml = editorRef.current?.getContent() || ''
 
@@ -85,36 +86,54 @@ export function ReplyComposer({
       setError(errorMessage)
       console.error('Reply send error:', err)
     }
-  }
+  }, [originalEmail, onSend, replySubject])
 
-  const handleCancel = () => {
+  const handleCancel = useCallback(() => {
     if (!isSending) {
       setReplyBody('')
       setError('')
       editorRef.current?.setContent('')
       onCancel()
     }
-  }
+  }, [isSending, onCancel])
+
+  // Keyboard shortcuts
+  useEffect(() => {
+    const handleKeyDown = (e: KeyboardEvent) => {
+      if (!isVisible) return
+
+      if (e.key === 'Escape' && !isSending) {
+        handleCancel()
+      }
+
+      if (e.ctrlKey && e.key === 'Enter' && !isSending && replyBody.trim()) {
+        handleSend()
+      }
+    }
+
+    document.addEventListener('keydown', handleKeyDown)
+    return () => document.removeEventListener('keydown', handleKeyDown)
+  }, [isVisible, isSending, replyBody, handleCancel, handleSend])
 
   if (!isVisible) return null
 
   return (
-    <div className="absolute inset-0 bg-white border-l border-gray-200 shadow-lg z-30 flex flex-col">
-      {/* Simplified Header */}
-      <div className="flex items-center justify-between p-4 border-b border-gray-200 bg-gray-50">
+    <div className="absolute inset-0 surface-light border-l border-border elevation-3 z-30 flex flex-col">
+      {/* Header */}
+      <div className="flex items-center justify-between p-4 border-b border-border surface-dark">
         <div className="flex items-center space-x-3">
           <Button
             variant="ghost"
             size="sm"
             onClick={handleCancel}
             disabled={isSending}
-            className="h-8 w-8 p-0 hover:bg-gray-200"
+            className="h-8 w-8 p-0 hover:bg-accent"
           >
             <X className="h-4 w-4" />
           </Button>
           <div>
-            <h3 className="font-medium text-gray-900">Reply</h3>
-            <p className="text-sm text-gray-500">
+            <h3 className="font-semibold text-foreground">Reply</h3>
+            <p className="text-sm text-muted-foreground">
               to {originalEmail.sender.suimailNs}
             </p>
           </div>
@@ -124,7 +143,7 @@ export function ReplyComposer({
           onClick={handleSend}
           disabled={isSending || !replyBody.trim()}
           size="sm"
-          className="bg-blue-600 hover:bg-blue-700"
+          className="bg-blue-base hover:bg-blue-dark text-white touch-target"
         >
           {isSending ? (
             <>
@@ -144,30 +163,30 @@ export function ReplyComposer({
       <div className="flex-1 flex flex-col overflow-hidden">
         {/* Error Message */}
         {error && (
-          <div className="mx-4 mt-4 p-3 bg-red-50 border border-red-200 rounded-md">
-            <p className="text-sm text-red-600">{error}</p>
+          <div className="mx-4 mt-4 p-3 bg-destructive/10 border border-destructive/20 rounded-md">
+            <p className="text-sm text-destructive">{error}</p>
           </div>
         )}
 
         {/* Compose Area */}
-        <div className="flex-1 p-4 space-y-4 overflow-y-auto">
-          {/* To and Subject Fields - Simplified */}
+        <div className="flex-1 p-4 space-y-4 overflow-y-auto smooth-scroll">
+          {/* To and Subject Fields */}
           <div className="space-y-3">
             <div className="flex items-center space-x-2 text-sm">
-              <span className="text-gray-500 w-16">To:</span>
-              <span className="text-gray-900">
+              <span className="text-muted-foreground w-16">To:</span>
+              <span className="text-foreground">
                 {originalEmail.sender.suimailNs}
               </span>
             </div>
             <div className="flex items-center space-x-2 text-sm">
-              <span className="text-gray-500 w-16">Subject:</span>
-              <span className="text-gray-900">{replySubject}</span>
+              <span className="text-muted-foreground w-16">Subject:</span>
+              <span className="text-foreground">{replySubject}</span>
             </div>
           </div>
 
-          <div className="border-t border-gray-200 pt-4">
+          <div className="border-t border-border pt-4">
             {/* Rich Text Editor */}
-            <div className="mb-4">
+            <div className="mb-4 rounded-lg overflow-hidden border border-border">
               <Editor
                 onInit={(_evt, editor) => (editorRef.current = editor)}
                 apiKey={import.meta.env.VITE_TINYMCE_API_KEY}
@@ -194,28 +213,37 @@ export function ReplyComposer({
                   toolbar:
                     'undo redo | blocks | bold italic underline | alignleft aligncenter alignright alignjustify | bullist numlist outdent indent | removeformat | help',
                   content_style:
-                    'body { font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Oxygen, Ubuntu, Cantarell, "Open Sans", "Helvetica Neue", sans-serif; font-size: 14px }',
+                    'body { font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Oxygen, Ubuntu, Cantarell, "Open Sans", "Helvetica Neue", sans-serif; font-size: 14px; color: #1f2937; } body.dark { color: #f9fafb; }',
                   branding: false,
                   resize: false,
                   statusbar: false,
                   placeholder: 'Type your reply here...',
+                  skin: 'oxide',
                 }}
                 onEditorChange={content => setReplyBody(content)}
               />
             </div>
 
             {/* Keyboard Shortcuts Hint */}
-            <div className="text-xs text-gray-500 mb-4">
-              Press Ctrl+Enter to send • Esc to cancel
+            <div className="text-xs text-muted-foreground mb-4">
+              Press{' '}
+              <kbd className="px-1.5 py-0.5 bg-muted rounded text-foreground font-mono text-xs">
+                Ctrl+Enter
+              </kbd>{' '}
+              to send •{' '}
+              <kbd className="px-1.5 py-0.5 bg-muted rounded text-foreground font-mono text-xs">
+                Esc
+              </kbd>{' '}
+              to cancel
             </div>
 
             {/* Quoted Message Toggle */}
-            <div className="border-t border-gray-200 pt-4">
+            <div className="border-t border-border pt-4">
               <Button
                 variant="ghost"
                 size="sm"
                 onClick={() => setShowQuotedMessage(!showQuotedMessage)}
-                className="text-gray-600 hover:text-gray-900 p-0 h-auto font-normal"
+                className="text-muted-foreground hover:text-foreground p-0 h-auto font-normal"
               >
                 <ChevronDown
                   className={`h-4 w-4 mr-2 transition-transform ${showQuotedMessage ? 'rotate-180' : ''}`}
@@ -224,8 +252,8 @@ export function ReplyComposer({
               </Button>
 
               {showQuotedMessage && (
-                <div className="mt-3 p-4 bg-gray-50 rounded-lg border border-gray-200">
-                  <div className="text-xs text-gray-600 space-y-1 mb-3">
+                <div className="mt-3 p-4 surface-dark rounded-lg border border-border elevation-1">
+                  <div className="text-xs text-muted-foreground space-y-1 mb-3">
                     <div>
                       <span className="font-medium">From:</span>{' '}
                       {originalEmail.sender.suimailNs}
@@ -239,7 +267,7 @@ export function ReplyComposer({
                       {originalEmail.subject}
                     </div>
                   </div>
-                  <div className="text-sm text-gray-700 whitespace-pre-wrap border-l-2 border-gray-300 pl-3">
+                  <div className="text-sm text-foreground whitespace-pre-wrap border-l-2 border-border pl-3">
                     {originalEmail.body}
                   </div>
                 </div>

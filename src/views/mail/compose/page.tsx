@@ -102,6 +102,15 @@ export default function ComposePage() {
 
       data.attachments?.forEach(file => formData.append('attachments', file))
 
+      // Navigate to inbox immediately for fast UX
+      navigate('/mail/inbox')
+
+      setNotification({
+        message: 'Sending mail...',
+        type: 'success',
+      })
+
+      // Send mail in background
       sendMail(formData)
         .then(async () => {
           setNotification({
@@ -114,18 +123,25 @@ export default function ComposePage() {
             has_fee: data.requiredFee > 0,
           })
           await queryClient.invalidateQueries({
-            queryKey: ['outbox-mails'],
+            queryKey: ['outbox-mails', 'inbox-mails'],
           })
-          navigate('/mail/sent')
         })
         .catch(error => {
           if (error instanceof AxiosError) {
             setNotification({
-              message: error.response?.data.message,
+              message: error.response?.data.message || 'Failed to send mail',
               type: 'error',
             })
             mixpanel.track('Send Mail Failure', {
               reason: error.response?.data.message,
+            })
+          } else {
+            setNotification({
+              message: 'Failed to send mail',
+              type: 'error',
+            })
+            mixpanel.track('Send Mail Failure', {
+              reason: 'Unknown error',
             })
           }
         })
@@ -141,28 +157,24 @@ export default function ComposePage() {
   }
 
   return (
-    <div className="bg-gray-50 min-h-screen">
-      {/* Sticky Header */}
-      <div className="sticky top-0 z-10 bg-white border-b border-gray-200 shadow-sm">
-        <div className="flex items-center gap-3 px-4 py-3">
-          <Button
-            variant="ghost"
-            size="sm"
-            onClick={() => navigate(-1)}
-            className="flex items-center gap-2 text-gray-600 hover:text-gray-900 hover:bg-gray-100 transition-colors"
-          >
-            <ArrowLeft className="h-4 w-4" />
-            <span className="hidden sm:inline">Back</span>
-          </Button>
-          <div className="flex items-center gap-2">
-            <h1 className="text-lg font-semibold text-gray-900">New Message</h1>
-          </div>
-        </div>
+    <div className="flex flex-col min-h-screen surface-base">
+      {/* Header */}
+      <div className="sticky top-0 z-10 flex items-center gap-3 border-b border-border surface-light elevation-1 px-4 py-3">
+        <Button
+          variant="ghost"
+          size="icon"
+          onClick={() => navigate(-1)}
+          aria-label="Go back"
+          className="hover:bg-accent flex-shrink-0"
+        >
+          <ArrowLeft className="h-5 w-5 text-foreground" />
+        </Button>
+        <h1 className="text-lg font-semibold text-foreground">New Message</h1>
       </div>
 
-      {/* Main Content */}
-      <div className="container mx-auto px-4 py-6 max-w-4xl">
-        <div className="max-w-2xl mx-auto">
+      {/* Content */}
+      <div className="flex-1 overflow-y-auto">
+        <div className="max-w-3xl mx-auto px-4 sm:px-6 py-6 sm:py-8">
           <FormSection onSubmit={handleSend} isLoading={isSendingMail} />
         </div>
       </div>

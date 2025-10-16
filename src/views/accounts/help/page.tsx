@@ -14,7 +14,7 @@ export default function HelpPage() {
       <ExtendedToolbar getPageTitle={() => 'Help Center'} />
 
       <div className="pt-20 max-w-7xl mx-auto px-4 py-8">
-        <div className="absolute inset-0 bg-gradient-to-br from-white via-blue-50 to-white" />
+        <div className="absolute inset-0 surface-base" />
         <div className="relative z-30">
           <div className="grid grid-cols-1 xl:grid-cols-4 gap-8">
             <div className="xl:col-span-1">

@@ -156,8 +156,8 @@ export function EmailList({ mails, refetch }: EmailListProps) {
   }, [safeMails])
 
   return (
-    <div className="flex flex-col rounded-lg border border-gray-200 bg-white shadow-sm">
-      <div className="flex items-center justify-between border-b border-gray-200 px-4 py-3">
+    <div className="flex flex-col rounded-lg border border-border surface-light elevation-1">
+      <div className="flex items-center justify-between border-b border-border px-4 py-3">
         <EmailListToolbar
           refetch={refetch}
           hasSelectedEmails={hasSelectedEmails}
@@ -166,7 +166,7 @@ export function EmailList({ mails, refetch }: EmailListProps) {
           handleDeleteSelectedEmails={handleDeleteSelectedEmails}
         />
 
-        <span className="text-sm text-gray-500">
+        <span className="text-sm text-muted-foreground">
           {safeMails.length} {safeMails.length > 1 ? 'mails' : 'mail'}
         </span>
       </div>
@@ -184,7 +184,7 @@ export function EmailList({ mails, refetch }: EmailListProps) {
           ))
         ) : (
           <div className="flex h-32 items-center justify-center">
-            <p className="text-sm text-gray-500">No mail found</p>
+            <p className="text-sm text-muted-foreground">No mail found</p>
           </div>
         )}
       </div>

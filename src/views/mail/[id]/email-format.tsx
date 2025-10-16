@@ -16,12 +16,12 @@ export const EmailBodyFormatter = ({
     // Use html-react-parser to safely render HTML content
     return (
       <div
-        className={`max-w-none prose prose-sm ${isQuoted ? 'text-gray-600' : 'text-gray-900'}`}
+        className={`max-w-none prose prose-sm ${
+          isQuoted ? 'text-muted-foreground' : 'text-foreground'
+        } prose-headings:text-foreground prose-p:text-foreground prose-a:text-blue-base prose-strong:text-foreground prose-code:text-foreground prose-pre:bg-muted prose-pre:text-foreground prose-blockquote:text-muted-foreground prose-blockquote:border-l-border prose-hr:border-border prose-ul:text-foreground prose-ol:text-foreground prose-li:text-foreground`}
         style={{
-          // Override prose styles to match your design
           fontSize: '14px',
           lineHeight: '1.6',
-          color: isQuoted ? '#6B7280' : '#111827',
         }}
       >
         {parse(body)}
@@ -41,7 +41,9 @@ export const EmailBodyFormatter = ({
       return (
         <div
           key={pIndex}
-          className={`mb-4 ${isQuoted ? 'text-gray-600' : 'text-gray-900'}`}
+          className={`mb-4 ${
+            isQuoted ? 'text-muted-foreground' : 'text-foreground'
+          }`}
         >
           {lines.map((line, lIndex) => {
             // Check if line is a quote (starts with >)
@@ -49,9 +51,9 @@ export const EmailBodyFormatter = ({
               return (
                 <div
                   key={lIndex}
-                  className="border-l-3 border-gray-300 pl-3 ml-2 mb-2"
+                  className="border-l-2 border-border pl-3 ml-2 mb-2"
                 >
-                  <span className="text-gray-600 italic">
+                  <span className="text-muted-foreground italic">
                     {formatTextWithLinks(line.replace(/^>\s*/, ''))}
                   </span>
                 </div>
@@ -63,7 +65,7 @@ export const EmailBodyFormatter = ({
               return (
                 <div
                   key={lIndex}
-                  className="text-sm text-gray-500 font-medium mb-1"
+                  className="text-sm text-muted-foreground font-medium mb-1"
                 >
                   {formatTextWithLinks(line)}
                 </div>
@@ -103,7 +105,7 @@ export const EmailBodyFormatter = ({
             href={part}
             target="_blank"
             rel="noopener noreferrer"
-            className="text-blue-600 hover:text-blue-800 hover:underline inline-flex items-center"
+            className="text-blue-base hover:text-blue-dark hover:underline inline-flex items-center transition-colors"
           >
             {part.length > 50 ? `${part.substring(0, 47)}...` : part}
             <ExternalLink className="h-3 w-3 ml-1 opacity-70" />
@@ -117,7 +119,7 @@ export const EmailBodyFormatter = ({
           <a
             key={index}
             href={`mailto:${part}`}
-            className="text-blue-600 hover:text-blue-800 hover:underline"
+            className="text-blue-base hover:text-blue-dark hover:underline transition-colors"
           >
             {part}
           </a>
