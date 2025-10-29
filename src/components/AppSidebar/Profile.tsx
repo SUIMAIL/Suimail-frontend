@@ -7,6 +7,7 @@ interface ProfileProps {
   name: string
   email: string
 }
+// Component to display user profile information in the sidebar
 
 export function Profile({ name, email }: ProfileProps) {
   const { data: profileImageData, isPending: isLoadingProfileImage } =
@@ -18,7 +19,7 @@ export function Profile({ name, email }: ProfileProps) {
   )
 
   if (isLoadingProfileImage) {
-    return <Skeleton className="w-10 h-10 rounded-full" />
+    return <Skeleton className="w-10 h-10 rounded-full " />
   }
 
   return (
