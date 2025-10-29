@@ -23,7 +23,6 @@ const MailBoardPageLayout = ({ children }: MailBoardPageLayoutProps) => {
       script.referrerPolicy = 'origin'
       script.onload = () => {
         window.tinymceScriptLoaded = true
-        console.log('✅ TinyMCE preloaded and ready')
       }
       document.body.appendChild(script)
     }

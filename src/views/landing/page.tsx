@@ -47,9 +47,14 @@ export default function LandingPage() {
       {/* Logo Section */}
       <div className="flex items-center gap-2 mb-8 sm:mb-10 lg:mb-12">
         <img
-          src="/images/suimail-logo.png"
+          src="/images/Black.png"
           alt="SUIMAIL"
-          className="w-[120px] sm:w-[150px] lg:w-[180px] h-auto"
+          className="w-[160px] sm:w-[150px] lg:w-[180px] h-auto block dark:hidden"
+        />
+        <img
+          src="/images/White.png"
+          alt="SUIMAIL"
+          className="w-[160px] sm:w-[150px] lg:w-[180px] h-auto hidden dark:block"
         />
       </div>
 

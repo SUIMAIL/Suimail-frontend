@@ -22,7 +22,7 @@ export function Profile({ name, email }: ProfileProps) {
   }
 
   return (
-    <div className="flex items-center gap-3 p-2 rounded-lg hover:bg-gray-100 transition-colors pointer-events-none select-none">
+    <div className="flex items-center gap-3 p-2 rounded-lg hover:bg-accent transition-colors pointer-events-none select-none">
       <div className="relative">
         {profileImage ? (
           <img
@@ -39,8 +39,8 @@ export function Profile({ name, email }: ProfileProps) {
       </div>
 
       <div className="flex-1 min-w-0">
-        <p className="font-medium text-gray-800">{name}</p>
-        <p className="text-xs text-gray-500 truncate">{email}</p>
+        <p className="font-medium text-foreground">{name}</p>
+        <p className="text-xs text-muted-foreground truncate">{email}</p>
       </div>
     </div>
   )
