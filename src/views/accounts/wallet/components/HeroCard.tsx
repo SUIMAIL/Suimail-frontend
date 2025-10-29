@@ -67,9 +67,9 @@ export function HeroCard({ accountAddress }: HeroCardProps) {
   }
 
   return (
-    <Card>
+    <Card className="surface-light elevation-2 border-border">
       <CardHeader className="flex flex-col items-center">
-        <CardTitle className="text-sm font-normal text-[#6b7280]">
+        <CardTitle className="text-sm font-normal text-muted-foreground">
           Total Balance
         </CardTitle>
         <VisuallyHidden>
@@ -78,13 +78,14 @@ export function HeroCard({ accountAddress }: HeroCardProps) {
 
         <div className="flex flex-col items-center">
           <div className="pl-3 flex items-center gap-2">
-            <p className="text-3xl font-bold text-blue-500">
+            <p className="text-3xl font-bold text-blue-base">
               {walletData.formattedBalanceSui} SUI
             </p>
             <Button
               size="icon"
               variant="ghost"
               onClick={() => refetchBalance()}
+              className="hover:bg-accent"
             >
               <RefreshCcw
                 className={cn('w-3 h-3', {
@@ -93,7 +94,7 @@ export function HeroCard({ accountAddress }: HeroCardProps) {
               />
             </Button>
           </div>
-          <p className="text-sm text-[#6b7280]">
+          <p className="text-sm text-muted-foreground">
             ≈ ${walletData.formattedBalanceUsd} USD
           </p>
         </div>
@@ -101,18 +102,18 @@ export function HeroCard({ accountAddress }: HeroCardProps) {
 
       <CardContent className="px-7 pb-10">
         <div className="flex flex-col gap-2">
-          <div className="w-full bg-gray-50 rounded-md p-4 border border-[#e5e7eb]">
-            <p className="text-xs text-[#6b7280]">Wallet Address</p>
+          <div className="w-full surface-dark elevation-1 rounded-md p-4 border border-border">
+            <p className="text-xs text-muted-foreground">Wallet Address</p>
             <div className="mt-2 flex items-center gap-2">
               <Input
                 readOnly
                 value={accountAddress}
-                className="focus-visible:ring-0 bg-white"
+                className="focus-visible:ring-0 surface-base border-border text-foreground"
               />
 
               <Button
                 size="icon"
-                className="bg-blue-500 hover:bg-blue-600"
+                className="bg-blue-base hover:bg-blue-dark text-white touch-target"
                 onClick={handleCopy}
               >
                 {isCopied ? (

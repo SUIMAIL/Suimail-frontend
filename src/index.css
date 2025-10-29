@@ -4,6 +4,7 @@
 
 @layer base {
   :root {
+    /* Original shadcn variables preserved */
     --background: 0 0% 100%;
     --foreground: 20 14.3% 4.1%;
     --card: 0 0% 100%;
@@ -37,8 +38,42 @@
     --sidebar-accent-foreground: 240 5.9% 10%;
     --sidebar-border: 220 13% 91%;
     --sidebar-ring: 217.2 91.2% 59.8%;
+
+    /* OKLCH Blue Color System - 3 shade combinations (solid colors, no gradients) */
+    --blue-light: oklch(0.75 0.15 250); /* Light variant */
+    --blue-base: oklch(0.6 0.2 250); /* Base blue (Tailwind blue-500) */
+    --blue-dark: oklch(0.45 0.22 250); /* Dark variant */
+
+    --blue-hover-light: oklch(0.78 0.16 250);
+    --blue-hover-base: oklch(0.65 0.21 250);
+    --blue-hover-dark: oklch(0.5 0.23 250);
+
+    /* Neutral OKLCH colors for surfaces */
+    --surface-light: oklch(0.99 0 0);
+    --surface-base: oklch(0.97 0 0);
+    --surface-dark: oklch(0.94 0 0);
+
+    /* Elevation system - NEUTRAL white light from top, subtle shadow from bottom */
+    --elevation-1:
+      0 -1px 0 0 oklch(1 0 0 / 0.5), 0 2px 4px -1px oklch(0.2 0 0 / 0.08),
+      0 4px 6px -2px oklch(0.2 0 0 / 0.05);
+
+    --elevation-2:
+      0 -1px 2px 0 oklch(1 0 0 / 0.6), 0 4px 8px -2px oklch(0.2 0 0 / 0.1),
+      0 8px 12px -4px oklch(0.2 0 0 / 0.08);
+
+    --elevation-3:
+      0 -2px 4px 0 oklch(1 0 0 / 0.7), 0 8px 16px -4px oklch(0.2 0 0 / 0.12),
+      0 12px 24px -6px oklch(0.2 0 0 / 0.1);
+
+    /* Interactive shadows - neutral */
+    --shadow-hover:
+      0 -1px 2px 0 oklch(1 0 0 / 0.7), 0 6px 12px -3px oklch(0.2 0 0 / 0.12),
+      0 10px 20px -5px oklch(0.2 0 0 / 0.1);
   }
+
   .dark {
+    /* Original dark mode variables preserved */
     --background: 20 14.3% 4.1%;
     --foreground: 60 9.1% 97.8%;
     --card: 20 14.3% 4.1%;
@@ -71,20 +106,190 @@
     --sidebar-accent-foreground: 240 4.8% 95.9%;
     --sidebar-border: 240 3.7% 15.9%;
     --sidebar-ring: 217.2 91.2% 59.8%;
+
+    /* OKLCH Blue Color System - Dark mode variants */
+    --blue-light: oklch(0.65 0.18 250);
+    --blue-base: oklch(0.55 0.2 250);
+    --blue-dark: oklch(0.4 0.22 250);
+
+    --blue-hover-light: oklch(0.7 0.19 250);
+    --blue-hover-base: oklch(0.6 0.21 250);
+    --blue-hover-dark: oklch(0.45 0.23 250);
+
+    /* Dark surfaces */
+    --surface-light: oklch(0.18 0.01 250);
+    --surface-base: oklch(0.15 0.01 250);
+    --surface-dark: oklch(0.12 0.01 250);
+
+    /* Dark mode elevation - NEUTRAL subtle highlights, deeper shadows */
+    --elevation-1:
+      0 -1px 0 0 oklch(0.25 0 0 / 0.3), 0 2px 4px -1px oklch(0.05 0 0 / 0.4),
+      0 4px 6px -2px oklch(0.05 0 0 / 0.3);
+
+    --elevation-2:
+      0 -1px 2px 0 oklch(0.28 0 0 / 0.4), 0 4px 8px -2px oklch(0.05 0 0 / 0.5),
+      0 8px 12px -4px oklch(0.05 0 0 / 0.4);
+
+    --elevation-3:
+      0 -2px 4px 0 oklch(0.32 0 0 / 0.5), 0 8px 16px -4px oklch(0.05 0 0 / 0.6),
+      0 12px 24px -6px oklch(0.05 0 0 / 0.5);
+
+    --shadow-hover:
+      0 -1px 2px 0 oklch(0.35 0 0 / 0.5), 0 6px 12px -3px oklch(0.05 0 0 / 0.6),
+      0 10px 20px -5px oklch(0.05 0 0 / 0.5);
   }
 }
+
 @layer base {
   * {
     @apply border-border;
   }
+
   body {
     @apply bg-background text-foreground;
+    -webkit-font-smoothing: antialiased;
+    -moz-osx-font-smoothing: grayscale;
+  }
+
+  /* Smooth transitions for theme switching */
+  * {
+    transition-property:
+      background-color, border-color, color, fill, stroke, box-shadow;
+    transition-timing-function: cubic-bezier(0.4, 0, 0.2, 1);
+    transition-duration: 200ms;
+  }
+}
+
+@layer components {
+  /* Elevation utility classes */
+  .elevation-1 {
+    box-shadow: var(--elevation-1);
+  }
+
+  .elevation-2 {
+    box-shadow: var(--elevation-2);
+  }
+
+  .elevation-3 {
+    box-shadow: var(--elevation-3);
+  }
+
+  .shadow-hover {
+    box-shadow: var(--shadow-hover);
+  }
+
+  /* Surface color utilities */
+  .surface-light {
+    background-color: var(--surface-light);
+  }
+
+  .surface-base {
+    background-color: var(--surface-base);
+  }
+
+  .surface-dark {
+    background-color: var(--surface-dark);
+  }
+
+  /* Blue color utilities - SOLID ONLY */
+  .bg-blue-light {
+    background-color: var(--blue-light);
+  }
+
+  .bg-blue-base {
+    background-color: var(--blue-base);
+  }
+
+  .bg-blue-dark {
+    background-color: var(--blue-dark);
+  }
+
+  .text-blue-light {
+    color: var(--blue-light);
+  }
+
+  .text-blue-base {
+    color: var(--blue-base);
+  }
+
+  .text-blue-dark {
+    color: var(--blue-dark);
+  }
+
+  /* Hover variants */
+  .hover\:bg-blue-light:hover {
+    background-color: var(--blue-hover-light);
+  }
+
+  .hover\:bg-blue-base:hover {
+    background-color: var(--blue-hover-base);
+  }
+
+  .hover\:bg-blue-dark:hover {
+    background-color: var(--blue-hover-dark);
+  }
+
+  /* Minimum touch target sizes for mobile */
+  .touch-target {
+    min-width: 44px;
+    min-height: 44px;
+    @apply flex items-center justify-center;
+  }
+
+  /* Gmail-inspired card style */
+  .email-card {
+    @apply surface-base elevation-1 rounded-lg transition-all duration-200;
+  }
+
+  .email-card:hover {
+    @apply shadow-hover;
+    transform: translateY(-1px);
+  }
+
+  /* Button with solid OKLCH blue (NO GRADIENT) */
+  .btn-primary {
+    background-color: var(--blue-base);
+    @apply text-white font-medium rounded-lg touch-target transition-all duration-200;
+  }
+
+  .btn-primary:hover {
+    background-color: var(--blue-hover-base);
+    @apply shadow-hover;
+  }
+
+  .btn-primary:active {
+    transform: translateY(1px);
   }
 }
 
 @layer utilities {
   .animate-spin-slow {
     animation: spin 3s linear infinite;
+  }
+
+  /* Responsive breakpoint utilities */
+  @media (max-width: 640px) {
+    .mobile-padding {
+      @apply px-4 py-3;
+    }
+  }
+
+  @media (min-width: 641px) and (max-width: 1024px) {
+    .tablet-padding {
+      @apply px-6 py-4;
+    }
+  }
+
+  @media (min-width: 1025px) {
+    .desktop-padding {
+      @apply px-8 py-5;
+    }
+  }
+
+  /* Smooth scroll behavior */
+  .smooth-scroll {
+    scroll-behavior: smooth;
+    -webkit-overflow-scrolling: touch;
   }
 }
 
@@ -107,4 +312,21 @@ h5,
 h6,
 div {
   @apply font-sans;
+}
+
+/* Responsive typography scale */
+html {
+  font-size: 16px;
+}
+
+@media (max-width: 640px) {
+  html {
+    font-size: 14px;
+  }
+}
+
+@media (min-width: 1440px) {
+  html {
+    font-size: 18px;
+  }
 }

@@ -50,16 +50,18 @@ export function SetMailFeeCard({
   const mailFee = watch('mailFee')
 
   return (
-    <form onSubmit={handleSubmit(onSubmit)} className="mt-10">
-      <h2 className="font-medium">Set SUI Amount Per Mail</h2>
-      <Card className="max-w-md mt-4">
+    <form onSubmit={handleSubmit(onSubmit)} className="mt-6 sm:mt-8 lg:mt-10">
+      <h2 className="font-semibold text-lg sm:text-xl text-foreground mb-4">
+        Set SUI Amount Per Mail
+      </h2>
+      <Card className="max-w-md surface-light elevation-2 border-border">
         <CardHeader>
-          <CardDescription className="text-xs">
+          <CardDescription className="text-xs sm:text-sm text-muted-foreground">
             Choose how much SUI you want to charge per mail. You can set any
             value between 0 and 0.1 SUI.
           </CardDescription>
         </CardHeader>
-        <CardContent className="flex flex-col gap-4">
+        <CardContent className="flex flex-col gap-4 sm:gap-5">
           <Slider
             min={0}
             max={0.1}
@@ -71,20 +73,25 @@ export function SetMailFeeCard({
             className="w-full"
             id="mailFee"
           />
-          <div className="flex items-center justify-between">
-            <Label htmlFor="mailFee" className="text-base font-medium">
+          <div className="flex items-center justify-between surface-dark elevation-1 rounded-lg p-3 sm:p-4 border border-border">
+            <Label
+              htmlFor="mailFee"
+              className="text-sm sm:text-base font-medium text-muted-foreground"
+            >
               Selected Amount
             </Label>
-            <span className="font-semibold text-primary">{mailFee} SUI</span>
+            <span className="font-semibold text-base sm:text-lg text-blue-base">
+              {mailFee} SUI
+            </span>
           </div>
           {errors.mailFee && (
-            <p className="text-sm text-red-500">{errors.mailFee.message}</p>
+            <p className="text-sm text-destructive">{errors.mailFee.message}</p>
           )}
         </CardContent>
         <CardFooter>
           <Button
             type="submit"
-            className="w-full hover:bg-blue-600"
+            className="w-full bg-blue-base hover:bg-blue-dark text-white touch-target transition-all hover:shadow-hover"
             disabled={isPending}
           >
             {isPending ? 'Updating...' : 'Done'}

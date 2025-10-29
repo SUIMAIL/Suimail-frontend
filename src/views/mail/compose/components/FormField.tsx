@@ -8,7 +8,6 @@ import type {
 } from 'react-hook-form'
 import type { ComposeFormData } from './FormSection'
 import { ComposeEditor } from './ComposeEditor'
-///git remote set-url origin https://github.com/cherry-creator-official/suimail-frontend.git
 interface FormFieldProps {
   label: string
   name: keyof ComposeFormData
@@ -62,7 +61,9 @@ export const FormField = ({
 
   return (
     <div className="space-y-2">
-      <Label htmlFor={name}>{label}</Label>
+      <Label htmlFor={name} className="text-foreground font-medium">
+        {label}
+      </Label>
 
       <div className="relative">
         {useRichEditor && type === 'textarea' ? (
@@ -76,20 +77,25 @@ export const FormField = ({
           <Textarea
             id={name}
             rows={rows}
-            className={className} // Apply className here
             {...commonProps}
+            className={`surface-base border-border text-foreground placeholder:text-muted-foreground focus:ring-blue-base resize-none ${className ?? ''}`}
           />
         ) : (
           <Input
             id={name}
             type={type}
-            className={className} // Apply className here
             {...commonProps}
+            className={`surface-base border-border text-foreground placeholder:text-muted-foreground focus:ring-blue-base ${className ?? ''}`}
           />
         )}
         {extendAction && extendAction}
       </div>
-      {error && <span className="text-xs text-red-500/80">{error}</span>}
+      {error && (
+        <span className="text-xs text-destructive flex items-center gap-1">
+          <span className="inline-block w-1 h-1 rounded-full bg-destructive"></span>
+          {error}
+        </span>
+      )}
     </div>
   )
 }

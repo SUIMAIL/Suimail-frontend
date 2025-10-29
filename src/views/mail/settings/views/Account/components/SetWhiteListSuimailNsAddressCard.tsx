@@ -102,11 +102,13 @@ export function SetWhiteListSuimailNsAddressCard({
   }, [setNotification, setUserWhiteListError])
 
   return (
-    <div className="bg-white rounded-lg shadow-md p-6 border border-gray-100">
-      <div className="flex flex-col gap-4">
+    <div className="surface-light elevation-2 rounded-lg p-5 sm:p-6 border border-border">
+      <div className="flex flex-col gap-4 sm:gap-5">
         <div>
-          <h3 className="font-medium text-lg mb-2">White List Address</h3>
-          <p className="text-sm text-gray-500">
+          <h3 className="font-semibold text-base sm:text-lg mb-2 text-foreground">
+            White List Address
+          </h3>
+          <p className="text-xs sm:text-sm text-muted-foreground">
             Add Suimail NS addresses to allow free mail delivery. Maximum 20
             addresses.
           </p>
@@ -118,6 +120,7 @@ export function SetWhiteListSuimailNsAddressCard({
             value={whiteListInput}
             onChange={e => setWhiteListInput(e.target.value)}
             placeholder="Enter email address"
+            className="surface-base border-border text-foreground placeholder:text-muted-foreground"
           />
           <Button
             onClick={handleSetUserWhiteList}
@@ -126,31 +129,39 @@ export function SetWhiteListSuimailNsAddressCard({
               isSetUserWhiteListPending ||
               isRemoveUserWhiteListPending
             }
-            className="px-4 py-2 bg-blue-500 text-white rounded-md hover:bg-blue-600 disabled:opacity-50 disabled:cursor-not-allowed flex items-center gap-2"
+            className="px-4 py-2 bg-blue-base text-white hover:bg-blue-dark disabled:opacity-50 disabled:cursor-not-allowed flex items-center gap-2 touch-target transition-all hover:shadow-hover whitespace-nowrap"
           >
-            <Plus className="w-5 h-5" />
-            Add
+            <Plus className="w-4 h-4 sm:w-5 sm:h-5" />
+            <span className="hidden sm:inline">Add</span>
           </Button>
         </div>
 
-        <div className="mt-4 space-y-2">
-          {whiteList.map((suimailNs, index) => (
-            <div
-              key={index}
-              className="flex items-center justify-between bg-gray-50 p-3 rounded-md"
-            >
-              <span className="text-sm">{suimailNs}</span>
-              <Button
-                disabled={isRemoveUserWhiteListPending}
-                onClick={() => handleRemoveFromWhiteList(suimailNs)}
-                variant="ghost"
-                size="icon"
-                className="text-gray-500 hover:text-red-500"
-              >
-                <X className="w-5 h-5" />
-              </Button>
+        <div className="mt-2 sm:mt-4 space-y-2">
+          {whiteList.length === 0 ? (
+            <div className="text-center py-8 text-sm text-muted-foreground">
+              No addresses in white list
             </div>
-          ))}
+          ) : (
+            whiteList.map((suimailNs, index) => (
+              <div
+                key={index}
+                className="flex items-center justify-between surface-dark elevation-1 p-3 rounded-md hover:elevation-2 transition-all border border-border/50"
+              >
+                <span className="text-sm text-foreground truncate mr-2">
+                  {suimailNs}
+                </span>
+                <Button
+                  disabled={isRemoveUserWhiteListPending}
+                  onClick={() => handleRemoveFromWhiteList(suimailNs)}
+                  variant="ghost"
+                  size="icon"
+                  className="text-muted-foreground hover:text-destructive hover:bg-destructive/10 flex-shrink-0"
+                >
+                  <X className="w-4 h-4 sm:w-5 sm:h-5" />
+                </Button>
+              </div>
+            ))
+          )}
         </div>
       </div>
     </div>

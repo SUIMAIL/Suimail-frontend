@@ -32,6 +32,7 @@ export function EmailListToolbar({
                 variant="ghost"
                 size="icon"
                 onClick={handleMarkSelectedEmailsAsRead}
+                className="hover:bg-blue-base/10 hover:text-blue-base"
               >
                 <MailOpen className="w-4 h-4" />
               </Button>
@@ -41,7 +42,7 @@ export function EmailListToolbar({
             </TooltipContent>
           </Tooltip>
 
-          <Separator orientation="vertical" className="h-5 w-px bg-black/20" />
+          <Separator orientation="vertical" className="h-5 w-px bg-border" />
 
           <Tooltip>
             <TooltipTrigger asChild>
@@ -49,11 +50,12 @@ export function EmailListToolbar({
                 variant="ghost"
                 size="icon"
                 onClick={handleDeleteSelectedEmails}
+                className="hover:bg-destructive/10 hover:text-destructive"
               >
                 <Trash2 className="w-4 h-4" />
               </Button>
             </TooltipTrigger>
-            <TooltipContent className="bg-red-400 text-white">
+            <TooltipContent className="bg-destructive text-destructive-foreground">
               <p>Delete</p>
             </TooltipContent>
           </Tooltip>
@@ -61,7 +63,12 @@ export function EmailListToolbar({
       ) : (
         <>
           {refetch && (
-            <Button variant="ghost" size="icon" onClick={refetch}>
+            <Button
+              variant="ghost"
+              size="icon"
+              onClick={refetch}
+              className="hover:bg-blue-base/10 hover:text-blue-base"
+            >
               <RefreshCw className="w-4 h-4" />
             </Button>
           )}

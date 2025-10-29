@@ -77,14 +77,14 @@ export function FAQSection() {
   }
 
   return (
-    <div className="bg-white rounded-xl shadow-sm border border-blue-100 p-6">
-      <h2 className="text-xl font-semibold text-gray-900 mb-6">
+    <div className="bg-white dark:bg-neutral-900 rounded-xl shadow-sm border border-blue-100 dark:border-neutral-800 p-6">
+      <h2 className="text-xl font-semibold text-gray-900 dark:text-white mb-6">
         Frequently Asked Questions
       </h2>
 
       {faqs.map((category, categoryIndex) => (
         <div key={categoryIndex} className="mb-8">
-          <h3 className="text-lg font-medium text-blue-700 mb-4 border-b border-blue-100 pb-2">
+          <h3 className="text-lg font-medium text-blue-700 dark:text-blue-300 mb-4 border-b border-blue-100 dark:border-neutral-800 pb-2">
             {category.category}
           </h3>
           <div className="space-y-3">
@@ -93,23 +93,23 @@ export function FAQSection() {
               return (
                 <div
                   key={faqIndex}
-                  className="border border-gray-200 rounded-lg overflow-hidden"
+                  className="border border-gray-200 dark:border-neutral-800 rounded-lg overflow-hidden"
                 >
                   <button
                     onClick={() => toggleFaq(globalIndex)}
-                    className="w-full flex items-center justify-between p-4 text-left hover:bg-gray-50 transition-colors"
+                    className="w-full flex items-center justify-between p-4 text-left hover:bg-gray-50 dark:hover:bg-neutral-800 transition-colors"
                   >
-                    <span className="font-medium text-gray-900">
+                    <span className="font-medium text-gray-900 dark:text-white">
                       {faq.question}
                     </span>
                     {expandedFaq === globalIndex ? (
-                      <ChevronDown className="w-5 h-5 text-gray-500" />
+                      <ChevronDown className="w-5 h-5 text-gray-500 dark:text-gray-400" />
                     ) : (
-                      <ChevronRight className="w-5 h-5 text-gray-500" />
+                      <ChevronRight className="w-5 h-5 text-gray-500 dark:text-gray-400" />
                     )}
                   </button>
                   {expandedFaq === globalIndex && (
-                    <div className="px-4 pb-4 text-gray-700 border-t border-gray-100 bg-gray-50">
+                    <div className="px-4 pb-4 text-gray-700 dark:text-gray-200 border-t border-gray-100 dark:border-neutral-800 bg-gray-50 dark:bg-neutral-900">
                       {faq.answer}
                     </div>
                   )}

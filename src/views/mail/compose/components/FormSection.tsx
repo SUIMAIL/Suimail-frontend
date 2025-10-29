@@ -2,7 +2,7 @@ import type React from 'react'
 import { useEffect, useMemo, useState } from 'react'
 import { z } from 'zod'
 import { useForm } from 'react-hook-form'
-import { Paperclip, Send, X, Mail, User, FileText, Loader2 } from 'lucide-react'
+import { Paperclip, Send, X, Loader2, Mail } from 'lucide-react'
 import { zodResolver } from '@hookform/resolvers/zod'
 import { FormField } from './FormField'
 import { Input } from '@/components/ui/input'
@@ -16,7 +16,6 @@ import {
 import { AxiosError } from 'axios'
 import { isValidSuimailAddress } from '@/utils/helpers'
 import { useQueryClient } from '@tanstack/react-query'
-import { calculateTotalAttachmentsSize } from '../helpers/checkers'
 import prettyBytes from 'pretty-bytes'
 
 const formSchema = z.object({
@@ -112,18 +111,26 @@ export function FormSection({ onSubmit, isLoading }: FormSectionProps) {
     )
   }
 
-  const handleOnSubmit = (data: ComposeFormData) => {
+  const handleOnSubmit = async (data: ComposeFormData) => {
     if (!recipientAddress) {
       setRecipientError('Recipient not found')
       setTimeout(() => setRecipientError(null), 2000)
       return
     }
 
-    onSubmit({
+    await onSubmit({
       ...data,
       requiredFee,
       recipientAddress: recipientAddress ?? '',
     })
+
+    setValue('recipient', '')
+    setValue('subject', '')
+    setValue('message', '')
+    setValue('attachments', [])
+    setRecipientIsSet(false)
+    setRecipientAddress(null)
+    setRecipientError(null)
   }
 
   useEffect(() => {
@@ -178,46 +185,29 @@ export function FormSection({ onSubmit, isLoading }: FormSectionProps) {
     setValue('recipient', '')
   }
 
-  const getAttachmentsInfo = () => {
-    if (attachments.length === 0) return null
-    const totalSize = calculateTotalAttachmentsSize(attachments)
-    return {
-      count: attachments.length,
-      size: prettyBytes(totalSize),
-      text: `${attachments.length} file${attachments.length > 1 ? 's' : ''} • ${prettyBytes(totalSize)}`,
-    }
-  }
-
   return (
-    <div className="bg-white rounded-xl shadow-sm border border-gray-200 overflow-hidden">
+    <div className="surface-base elevation-1 rounded-xl border border-border overflow-hidden">
       {/* Header */}
-      <div className="bg-gradient-to-r from-blue-50 to-indigo-50 px-6 py-4 border-b border-gray-200">
-        <div className="flex items-center gap-3">
-          <div className="bg-blue-100 p-2 rounded-lg">
-            <Mail className="w-5 h-5 text-blue-600" />
-          </div>
-          <h2 className="text-lg font-semibold text-gray-900">
-            Compose Message
-          </h2>
-        </div>
+      <div className="surface-dark px-6 py-4 border-b border-border flex items-center gap-3">
+        <Mail className="w-5 h-5 text-blue-base" />
+        <h2 className="text-lg font-semibold text-foreground">New Message</h2>
       </div>
 
       <form onSubmit={handleSubmit(handleOnSubmit)} className="p-6 space-y-6">
-        {/* Recipient Field */}
+        {/* Recipient */}
         <div className="space-y-2">
-          <div className="flex items-center gap-2 mb-2">
-            <User className="w-4 h-4 text-gray-500" />
-            <Label className="text-sm font-medium text-gray-700">To</Label>
+          <div className="flex items-center gap-2">
+            <Label className="text-sm font-medium text-foreground">To</Label>
             {isValidating && (
-              <Loader2 className="w-4 h-4 animate-spin text-blue-500" />
+              <Loader2 className="w-4 h-4 animate-spin text-blue-base" />
             )}
           </div>
 
           <div className="relative">
             <FormField
               name="recipient"
-              label="" // Fixed: Added required label prop
-              placeholder="e.g. jane@suimailapp"
+              label=""
+              placeholder="recipient@suimailapp"
               error={errors.recipient?.message || recipientError}
               register={register}
               required
@@ -247,7 +237,7 @@ export function FormSection({ onSubmit, isLoading }: FormSectionProps) {
                 type="button"
                 variant="ghost"
                 size="sm"
-                className="absolute top-1/2 -translate-y-1/2 right-2 h-8 w-8 p-0 hover:bg-gray-100"
+                className="absolute top-1/2 -translate-y-1/2 right-2 h-8 w-8 p-0 text-muted-foreground hover:text-foreground"
                 onClick={handleClearRecipient}
               >
                 <X className="w-4 h-4" />
@@ -255,129 +245,105 @@ export function FormSection({ onSubmit, isLoading }: FormSectionProps) {
             )}
           </div>
 
-          {recipientIsSet && (
-            <div className="flex items-center gap-2 text-sm text-green-600 bg-green-50 px-3 py-2 rounded-lg">
-              <div className="w-2 h-2 bg-green-500 rounded-full"></div>
-              Recipient verified
-            </div>
-          )}
+          <ReturnRequiredFee
+            isFetching={
+              isFetchingMailFeeAndAddress || isFetchingSenderListedData
+            }
+            requiredFee={requiredFee}
+          />
         </div>
 
-        {/* Fee Information */}
-        <ReturnRequiredFee
-          isFetching={isValidating}
-          requiredFee={requiredFee}
+        {/* Subject */}
+        <FormField
+          label="Subject"
+          name="subject"
+          placeholder="Subject"
+          error={errors.subject?.message}
+          register={register}
+          required
         />
 
-        {/* Subject Field */}
-        <div className="space-y-2">
-          <div className="flex items-center gap-2 mb-2">
-            <FileText className="w-4 h-4 text-gray-500" />
-            <Label className="text-sm font-medium text-gray-700">Subject</Label>
-          </div>
+        {/* Message */}
+        <FormField
+          label="Message"
+          name="message"
+          type="textarea"
+          placeholder="Write your message..."
+          error={errors.message?.message}
+          register={register}
+          setValue={setValue}
+          watch={watch}
+          required
+          rows={12}
+          useRichEditor={true}
+        />
 
-          <FormField
-            name="subject"
-            label="" // Fixed: Added required label prop
-            placeholder="What's this about?"
-            error={errors.subject?.message}
-            register={register}
-            required
+        {/* Attachments */}
+        <div className="space-y-3">
+          <Label className="text-sm font-medium text-foreground">
+            Attachments
+          </Label>
+
+          <Input
+            type="file"
+            multiple
+            onChange={handleFileChange}
+            className="cursor-pointer file:mr-4 file:py-2 file:px-4 file:rounded-lg file:border-0 file:text-sm file:font-medium file:bg-blue-base/10 file:text-blue-base hover:file:bg-blue-base/20 file:cursor-pointer"
           />
-        </div>
 
-        {/* Message Field */}
-        <div className="space-y-2">
-          <Label className="text-sm font-medium text-gray-700">Message</Label>
-          <FormField
-            name="message"
-            label="" // Fixed: Added required label prop
-            type="textarea"
-            placeholder="Write your message here..."
-            error={errors.message?.message}
-            register={register}
-            setValue={setValue}
-            watch={watch}
-            required
-            rows={12}
-            useRichEditor={true}
-            className="min-h-[200px] resize-none"
-          />
-        </div>
-
-        {/* Attachments Section */}
-        <div className="space-y-4">
-          <div className="flex items-center justify-between">
-            <div className="flex items-center gap-2">
-              <Paperclip className="w-4 h-4 text-gray-500" />
-              <Label className="text-sm font-medium text-gray-700">
-                Attachments
-              </Label>
-            </div>
-            {getAttachmentsInfo() && (
-              <span className="text-xs text-gray-500 bg-gray-50 px-2 py-1 rounded-full">
-                {getAttachmentsInfo()?.text}
-              </span>
-            )}
-          </div>
-
-          {/* File Input */}
-          <div className="relative">
-            <Input
-              type="file"
-              multiple
-              onChange={handleFileChange}
-              className="block w-full text-sm text-gray-500 file:mr-4 file:py-2 file:px-4 file:rounded-lg file:border-0 file:text-sm file:font-medium file:bg-blue-50 file:text-blue-700 hover:file:bg-blue-100 cursor-pointer border-dashed border-2 border-gray-300 hover:border-blue-400 transition-colors"
-            />
-          </div>
-
-          {/* Attachment List */}
           {attachments.length > 0 && (
-            <div className="space-y-2">
-              <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
-                {attachments.map((file, index) => (
-                  <div
-                    key={index}
-                    className="flex items-center justify-between bg-gray-50 hover:bg-gray-100 px-3 py-2 rounded-lg border border-gray-200 transition-colors group"
-                  >
-                    <div className="flex items-center gap-2 min-w-0 flex-1">
-                      <Paperclip className="w-4 h-4 text-gray-400 flex-shrink-0" />
-                      <span className="text-sm text-gray-700 truncate">
-                        {file.name}
-                      </span>
-                      <span className="text-xs text-gray-500 flex-shrink-0">
-                        {prettyBytes(file.size)}
-                      </span>
-                    </div>
-                    <Button
-                      type="button"
-                      variant="ghost"
-                      size="sm"
-                      onClick={() => removeAttachment(index)}
-                      className="h-8 w-8 p-0 text-gray-400 hover:text-red-500 hover:bg-red-50 opacity-0 group-hover:opacity-100 transition-all flex-shrink-0"
-                    >
-                      <X className="w-4 h-4" />
-                    </Button>
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
+              {attachments.map((file, index) => (
+                <div
+                  key={index}
+                  className="email-card flex items-center justify-between px-3 py-2 group"
+                >
+                  <div className="flex items-center gap-2 min-w-0 flex-1">
+                    <Paperclip className="w-4 h-4 text-muted-foreground flex-shrink-0" />
+                    <span className="text-sm text-foreground truncate">
+                      {file.name}
+                    </span>
+                    <span className="text-xs text-muted-foreground flex-shrink-0">
+                      {prettyBytes(file.size)}
+                    </span>
                   </div>
-                ))}
-              </div>
+                  <Button
+                    type="button"
+                    variant="ghost"
+                    size="sm"
+                    onClick={() => removeAttachment(index)}
+                    className="h-8 w-8 p-0 text-muted-foreground hover:text-destructive hover:bg-destructive/10 opacity-0 group-hover:opacity-100 transition-all flex-shrink-0"
+                  >
+                    <X className="w-4 h-4" />
+                  </Button>
+                </div>
+              ))}
             </div>
           )}
         </div>
 
-        {/* Submit Button */}
-        <div className="flex justify-end pt-4 border-t border-gray-100">
+        {/* Submit */}
+        <div className="flex justify-end pt-2">
           <Button
             type="submit"
-            disabled={isLoading || isValidating}
-            className="flex items-center gap-2 bg-blue-600 hover:bg-blue-700 disabled:bg-gray-400 text-white px-6 py-2.5 rounded-lg font-medium transition-all transform hover:scale-105 active:scale-95"
+            disabled={
+              isLoading ||
+              isFetchingMailFeeAndAddress ||
+              isFetchingSenderListedData
+            }
+            className="btn-primary gap-2"
           >
             {isLoading ? (
-              <Loader2 className="w-4 h-4 animate-spin" />
+              <>
+                <Loader2 className="w-4 h-4 animate-spin" />
+                Sending...
+              </>
             ) : (
-              <Send className="w-4 h-4" />
+              <>
+                <Send className="w-4 h-4" />
+                Send
+              </>
             )}
-            {isLoading ? 'Sending...' : 'Send Message'}
           </Button>
         </div>
       </form>

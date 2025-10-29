@@ -146,7 +146,7 @@ export function Chatbot() {
     // Default responses for unmatched queries
     const defaultResponses = [
       "That's a great question! Could you provide more details so I can give you the most helpful answer?",
-      "I'd love to help! Can you tell me more about what you're trying to do with the Sui Email app?",
+      "I'd love to help! Can you tell me more about what you're trying to do with the Suimail app?",
       "I'm here to assist with wallet connection, sending emails, security, or any other features. What specific area would you like help with?",
       'Let me help you with that! Are you looking for help with technical issues, getting started, or learning about features?',
     ]
@@ -174,7 +174,7 @@ export function Chatbot() {
       {/* Chatbot Toggle */}
       <button
         onClick={() => setChatbotOpen(!chatbotOpen)}
-        className="fixed bottom-6 right-6 bg-blue-600 hover:bg-blue-700 text-white p-4 rounded-full shadow-lg transition-colors z-50"
+        className="fixed bottom-6 right-6 bg-blue-600 hover:bg-blue-700 text-white p-4 rounded-full shadow-lg transition-colors z-50 dark:shadow-blue-900"
       >
         {chatbotOpen ? (
           <X className="w-6 h-6" />
@@ -185,11 +185,11 @@ export function Chatbot() {
 
       {/* Chatbot Modal */}
       {chatbotOpen && (
-        <div className="fixed bottom-24 right-6 w-96 bg-white rounded-xl shadow-2xl border border-blue-100 z-50">
+        <div className="fixed bottom-24 right-6 w-96 bg-white dark:bg-neutral-900 rounded-xl shadow-2xl border border-blue-100 dark:border-neutral-800 z-50">
           <div className="bg-blue-600 text-white p-4 rounded-t-xl flex items-center space-x-3">
             <Bot className="w-6 h-6" />
             <div>
-              <h3 className="font-semibold">Sui Email Assistant</h3>
+              <h3 className="font-semibold">Suimail Assistant</h3>
               <p className="text-sm text-blue-100">Online now</p>
             </div>
           </div>
@@ -206,7 +206,7 @@ export function Chatbot() {
                   className={`max-w-xs px-4 py-2 rounded-lg ${
                     msg.type === 'user'
                       ? 'bg-blue-600 text-white'
-                      : 'bg-gray-100 text-gray-800'
+                      : 'bg-gray-100 dark:bg-neutral-800 text-gray-800 dark:text-gray-100'
                   }`}
                 >
                   {msg.message}
@@ -215,7 +215,7 @@ export function Chatbot() {
             ))}
           </div>
 
-          <div className="p-4 border-t border-gray-200">
+          <div className="p-4 border-t border-gray-200 dark:border-neutral-800">
             <div className="flex space-x-2">
               <input
                 type="text"
@@ -223,12 +223,12 @@ export function Chatbot() {
                 onChange={e => setUserMessage(e.target.value)}
                 onKeyPress={e => e.key === 'Enter' && handleSendMessage()}
                 placeholder="Ask about wallets, sending emails, fees..."
-                className="flex-1 px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent text-sm"
+                className="flex-1 px-3 py-2 border border-gray-300 dark:border-neutral-700 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent text-sm bg-white dark:bg-neutral-900 text-gray-900 dark:text-gray-100"
               />
               <button
                 onClick={handleSendMessage}
                 disabled={!userMessage.trim()}
-                className="bg-blue-600 hover:bg-blue-700 disabled:bg-gray-300 disabled:cursor-not-allowed text-white px-4 py-2 rounded-lg transition-colors"
+                className="bg-blue-600 hover:bg-blue-700 disabled:bg-gray-300 dark:disabled:bg-neutral-800 disabled:cursor-not-allowed text-white px-4 py-2 rounded-lg transition-colors"
               >
                 <Send className="w-4 h-4" />
               </button>
@@ -240,7 +240,7 @@ export function Chatbot() {
                   <button
                     key={suggestion}
                     onClick={() => setUserMessage(suggestion)}
-                    className="text-xs bg-blue-50 text-blue-600 px-2 py-1 rounded-full hover:bg-blue-100 transition-colors"
+                    className="text-xs bg-blue-50 dark:bg-blue-900/20 text-blue-600 dark:text-blue-300 px-2 py-1 rounded-full hover:bg-blue-100 dark:hover:bg-blue-900/40 transition-colors"
                   >
                     {suggestion}
                   </button>
