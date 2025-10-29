@@ -29,8 +29,29 @@ export function ReplyComposer({
   const [replyBody, setReplyBody] = useState('')
   const [error, setError] = useState('')
   const [showQuotedMessage, setShowQuotedMessage] = useState(false)
+  const [isDarkMode, setIsDarkMode] = useState(
+    document.documentElement.classList.contains('dark')
+  )
+  const [editorKey, setEditorKey] = useState(0)
   const editorRef = useRef<TinyMCEEditor | null>(null)
 
+  // Watch for theme changes
+  useEffect(() => {
+    const observer = new MutationObserver(() => {
+      const isDark = document.documentElement.classList.contains('dark')
+      setIsDarkMode(isDark)
+      setEditorKey(prev => prev + 1)
+    })
+
+    observer.observe(document.documentElement, {
+      attributes: true,
+      attributeFilter: ['class'],
+    })
+
+    return () => observer.disconnect()
+  }, [])
+
+  // Focus effect
   useEffect(() => {
     if (isVisible && editorRef.current) {
       editorRef.current.focus()
@@ -188,6 +209,7 @@ export function ReplyComposer({
             {/* Rich Text Editor */}
             <div className="mb-4 rounded-lg overflow-hidden border border-border">
               <Editor
+                key={editorKey}
                 onInit={(_evt, editor) => (editorRef.current = editor)}
                 apiKey={import.meta.env.VITE_TINYMCE_API_KEY}
                 init={{
@@ -212,13 +234,23 @@ export function ReplyComposer({
                   ],
                   toolbar:
                     'undo redo | blocks | bold italic underline | alignleft aligncenter alignright alignjustify | bullist numlist outdent indent | removeformat | help',
-                  content_style:
-                    'body { font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Oxygen, Ubuntu, Cantarell, "Open Sans", "Helvetica Neue", sans-serif; font-size: 14px; color: #1f2937; } body.dark { color: #f9fafb; }',
+                  skin: isDarkMode ? 'oxide-dark' : 'oxide',
+                  content_css: isDarkMode ? 'dark' : 'default',
+                  content_style: `
+                    body {
+                      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Oxygen, Ubuntu, Cantarell, "Open Sans", "Helvetica Neue", sans-serif;
+                      font-size: 14px;
+                      color: ${isDarkMode ? '#e5e5e5' : '#1f2937'};
+                      background: ${isDarkMode ? '#1a1a1a' : '#ffffff'};
+                    }
+                    [data-mce-placeholder]:before {
+                      color: #ffffff !important;
+                    }
+                  `,
                   branding: false,
                   resize: false,
                   statusbar: false,
                   placeholder: 'Type your reply here...',
-                  skin: 'oxide',
                 }}
                 onEditorChange={content => setReplyBody(content)}
               />

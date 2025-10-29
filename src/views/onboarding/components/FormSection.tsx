@@ -43,7 +43,30 @@ export function FormSection({ handleSubmit, isProcessing }: FormSectionProps) {
   }, [isCheckingAvailability, availabilityData, address])
 
   const handleAddressChange = (value: string) => {
-    setAddress(value)
+    // Remove @suimailapp suffix if it exists to prevent double appending
+    let cleanValue = value.replace(/@suimailapp$/g, '')
+
+    // Prevent .sui in standard names (only allowed for verified users)
+    if (cleanValue.includes('.sui')) {
+      cleanValue = cleanValue.replace(/\.sui/g, '')
+    }
+
+    // Smart @ handling - auto-complete to @suimailapp when user types @
+    if (cleanValue.endsWith('@') && !cleanValue.endsWith('@suimailapp')) {
+      setAddress(cleanValue + 'suimailapp')
+    } else {
+      setAddress(cleanValue)
+    }
+  }
+
+  const handleBlur = () => {
+    // Auto-append @suimailapp when user finishes typing (on blur)
+    const cleanAddress = address.replace(/@suimailapp$/g, '')
+    if (cleanAddress && !cleanAddress.includes('@')) {
+      setAddress(cleanAddress + '@suimailapp')
+    } else if (cleanAddress.endsWith('@')) {
+      setAddress(cleanAddress + 'suimailapp')
+    }
   }
 
   const onSubmit = (e: React.FormEvent<HTMLFormElement>) => {
@@ -69,9 +92,32 @@ export function FormSection({ handleSubmit, isProcessing }: FormSectionProps) {
                 <Input
                   id="name"
                   type="text"
-                  placeholder="e.g. aliceweb3@suimailapp"
+                  placeholder="e.g. aliceweb3"
                   value={address}
                   onChange={e => handleAddressChange(e.target.value)}
+                  onBlur={handleBlur}
+                  onKeyDown={e => {
+                    // Prevent deleting @suimailapp
+                    const cursorPos = e.currentTarget.selectionStart || 0
+                    const domainStart = address.indexOf('@suimailapp')
+                    if (
+                      (e.key === 'Backspace' || e.key === 'Delete') &&
+                      domainStart !== -1 &&
+                      cursorPos > domainStart
+                    ) {
+                      e.preventDefault()
+                    }
+                  }}
+                  onClick={e => {
+                    // Keep cursor before @suimailapp
+                    const domainStart = address.indexOf('@suimailapp')
+                    if (domainStart !== -1) {
+                      e.currentTarget.setSelectionRange(
+                        domainStart,
+                        domainStart
+                      )
+                    }
+                  }}
                   className="pr-10"
                   required
                 />
@@ -86,6 +132,16 @@ export function FormSection({ handleSubmit, isProcessing }: FormSectionProps) {
                     <X className="h-4 w-4" />
                   </motion.button>
                 )}
+                {address.includes('@suimailapp') && (
+                  <motion.div
+                    initial={{ opacity: 0, scale: 0.95 }}
+                    animate={{ opacity: 1, scale: 1 }}
+                    transition={{ type: 'spring', stiffness: 500, damping: 30 }}
+                    className="absolute right-12 top-1/2 -translate-y-1/2 text-xs text-muted-foreground bg-secondary/50 px-2 py-1 rounded pointer-events-none"
+                  >
+                    @suimailapp
+                  </motion.div>
+                )}
               </div>
               {availability === 'checking' && (
                 <p className="text-sm text-gray-500 mt-1">
@@ -93,13 +149,17 @@ export function FormSection({ handleSubmit, isProcessing }: FormSectionProps) {
                 </p>
               )}
               {availability === 'available' && (
-                <p className="text-sm text-green-600 mt-1">
-                  ✅ {address} is available
+                <p className="text-sm text-green-600 mt-1 flex items-center gap-1">
+                  <span>✅</span>
+                  <span className="font-mono">{address}</span>
+                  <span>is available</span>
                 </p>
               )}
               {availability === 'taken' && (
-                <p className="text-sm text-red-600 mt-1">
-                  ❌ {address} is already taken
+                <p className="text-sm text-red-600 mt-1 flex items-center gap-1">
+                  <span>❌</span>
+                  <span className="font-mono">{address}</span>
+                  <span>is already taken</span>
                 </p>
               )}
             </div>

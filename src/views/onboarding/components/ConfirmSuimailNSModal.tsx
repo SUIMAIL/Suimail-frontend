@@ -23,6 +23,16 @@ export function ConfirmSuimailNSModal({
   suimailNs,
   handleOnConfirmSubmit,
 }: ConfirmSuimailNSModalProps) {
+  // Check if verified by looking for .sui in the address
+  const isVerified = suimailNs.includes('.sui')
+
+  // Ensure the full email address has @suimailapp
+  const fullEmailAddress = suimailNs.includes('@suimailapp')
+    ? suimailNs
+    : `${suimailNs}@suimailapp`
+
+  if (!showConfirmDialog) return null
+
   return (
     <AlertDialog open={showConfirmDialog} onOpenChange={setShowConfirmDialog}>
       <AlertDialogContent className="surface-light border-border max-w-md">
@@ -36,13 +46,35 @@ export function ConfirmSuimailNSModal({
                 You are about to register your SuiMail address:
               </div>
 
-              {/* Email Address Display */}
+              {/* Updated Email Address Display */}
               <div className="flex items-center justify-center surface-dark elevation-1 p-4 rounded-lg border border-border">
-                <Mail className="h-5 w-5 text-blue-base mr-2" />
-                <span className="font-semibold text-foreground text-lg">
-                  {suimailNs}
+                <Mail className="h-5 w-5 text-blue-base mr-2 flex-shrink-0" />
+                <span className="font-semibold text-foreground text-lg break-all">
+                  {fullEmailAddress}
                 </span>
               </div>
+
+              {/* Verified Badge for SuiNS users */}
+              {isVerified && (
+                <div className="bg-blue-base/10 border border-blue-base/30 rounded-lg p-3">
+                  <div className="flex items-center gap-2 justify-center">
+                    <svg
+                      className="w-5 h-5 text-blue-base"
+                      fill="currentColor"
+                      viewBox="0 0 20 20"
+                    >
+                      <path
+                        fillRule="evenodd"
+                        d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z"
+                        clipRule="evenodd"
+                      />
+                    </svg>
+                    <span className="text-sm font-medium text-blue-base">
+                      Verified SuiNS Owner
+                    </span>
+                  </div>
+                </div>
+              )}
 
               {/* Test Environment Warning */}
               <div className="bg-destructive/10 border-2 border-destructive/30 rounded-lg p-4">

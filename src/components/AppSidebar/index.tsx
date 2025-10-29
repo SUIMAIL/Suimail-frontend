@@ -107,11 +107,16 @@ export function AppSidebar() {
 
   return (
     <Sidebar className="fixed border-r border-border surface-light">
-      <SidebarHeader className="py-4 px-4 flex flex-col items-center gap-3">
+      <SidebarHeader className="py-3 px-4 flex flex-col items-center gap-3">
         <img
-          src="/images/suimail-logo.png"
+          src="/images/Black.png"
           alt="SUIMAIL"
-          className="w-[130px] h-auto"
+          className="w-[160px] h-auto block dark:hidden"
+        />
+        <img
+          src="/images/White.png"
+          alt="SUIMAIL"
+          className="w-[160px] h-auto hidden dark:block"
         />
 
         {!isSmallScreen && (
