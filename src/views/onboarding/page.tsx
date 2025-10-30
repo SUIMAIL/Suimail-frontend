@@ -98,9 +98,18 @@ export default function OnboardingPage() {
     setSuimailNs(_suimailNs)
   }
 
+  // const handleSubmit = async () => {
+  //   // Format the namespace for the backend
+  //   const formattedNamespace = suimailNs + '@suimailapp'
+  //   if (!walletAddress || !isValidSuiAddress(walletAddress)) {
+  //     console.error('❌ Invalid wallet address:', walletAddress)
+  //     setNotification({ message: 'Invalid wallet address', type: 'error' })
+  //     return
+  //   }
   const handleSubmit = async () => {
-    // Format the namespace for the backend
-    const formattedNamespace = suimailNs + '@suimailapp'
+    const formattedNamespace = suimailNs.includes('@suimailapp')
+      ? suimailNs
+      : suimailNs + '@suimailapp'
     if (!walletAddress || !isValidSuiAddress(walletAddress)) {
       console.error('❌ Invalid wallet address:', walletAddress)
       setNotification({ message: 'Invalid wallet address', type: 'error' })
@@ -447,7 +456,7 @@ export default function OnboardingPage() {
                           clipRule="evenodd"
                         />
                       </svg>
-                      <span className="font-mono text-foreground font-medium break-all">
+                      <span className="font-mono text-foreground text-blue-500 font-medium break-all">
                         {selectedSuins}.sui@suimailapp
                       </span>
                     </div>
