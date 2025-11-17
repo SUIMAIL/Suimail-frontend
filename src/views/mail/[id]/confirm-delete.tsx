@@ -64,7 +64,7 @@ export function ConfirmDeleteModal({
           >
             {isDeleting ? (
               <>
-                <span className="mr-2">Deleting...</span>
+                <span className="mr-2">Deleting....</span>
                 <span className="inline-block animate-spin">⏳</span>
               </>
             ) : (
