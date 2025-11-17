@@ -2,7 +2,7 @@ import { useState, useEffect, useMemo } from 'react'
 import type { IEmail } from '@/types/generic'
 import { useLocation, useNavigate, useParams } from 'react-router-dom'
 import { useGetUserProfileImageQuery } from '@/hooks/user'
-
+import { ConfirmDeleteModal } from '../[id]/confirm-delete'
 import {
   ArrowLeft,
   Trash2,
@@ -12,6 +12,7 @@ import {
   ChevronRight,
   MoreVertical,
   User,
+  ExternalLink,
 } from 'lucide-react'
 import { Loading } from '@/components/Loading'
 import { Button } from '@/components/ui/button'
@@ -31,6 +32,7 @@ import { Tooltip } from '@/components/ui/tooltip'
 import { ReplyComposer } from '@/views/mail/[id]/reply'
 import RenderAttachments from './components/RenderAttachments'
 import { EmailBodyFormatter } from './email-format'
+import { httpService } from '@/api'
 
 const QuotedMessage = ({
   email,
@@ -212,7 +214,8 @@ export default function EmailViewPage() {
   const [txDigest, setTxDigest] = useState<string>('')
   const [isReplying, setIsReplying] = useState(false)
   const [expandedQuotes, setExpandedQuotes] = useState<Set<string>>(new Set())
-
+  const [isLoadingBlobId, setIsLoadingBlobId] = useState(false)
+  const [showDeleteModal, setShowDeleteModal] = useState(false)
   const { claimEscrowTx } = useClaimEscrowTx()
   const { setNotification } = useToastContext()
 
@@ -298,6 +301,42 @@ export default function EmailViewPage() {
     })
   }
 
+  // Fetch blob ID and open Walrus Scan
+  const handleViewTransaction = async () => {
+    if (!latestMail?.id) return
+
+    setIsLoadingBlobId(true)
+    try {
+      console.log('Fetching blob ID for mail ID:', latestMail.id)
+      const response = await httpService.get(`/mail/blobId/${latestMail.id}`)
+
+      // if (!response.ok) {
+      //   throw new Error('Failed to fetch blob ID')
+      // }
+      console.log('Blob ID response:', response.blobId)
+      const data = response
+
+      if (data.blobId) {
+        // Open Walrus Scan in a new tab
+        window.open(
+          `https://walruscan.com/testnet/blob/${data.blobId}`,
+          '_blank',
+          'noopener,noreferrer'
+        )
+      } else {
+        throw new Error('Blob ID not found')
+      }
+    } catch (error) {
+      console.error('Error fetching blob ID:', error)
+      setNotification({
+        message: 'Failed to load transaction details',
+        type: 'error',
+      })
+    } finally {
+      setIsLoadingBlobId(false)
+    }
+  }
+
   if (isFetching) return <Loading message="Loading email..." />
   if (!mail) return <MailNotFound />
 
@@ -320,6 +359,7 @@ export default function EmailViewPage() {
             (query.queryKey[0] === 'mail-body' &&
               query.queryKey[1] === (latestMail?.id || '')),
         })
+        setShowDeleteModal(false)
         navigate(isInbox ? '/mail/inbox' : '/mail/sent')
       })
     } catch {
@@ -422,7 +462,8 @@ export default function EmailViewPage() {
                     size="icon"
                     variant="ghost"
                     className="p-2 rounded-full hover:bg-destructive/10 hover:text-destructive transition-colors touch-target"
-                    onClick={handleDeleteMail}
+                    // onClick={handleDeleteMail}
+                    onClick={() => setShowDeleteModal(true)}
                     disabled={isDeleting}
                   >
                     {isDeleting ? (
@@ -549,8 +590,22 @@ export default function EmailViewPage() {
                               })}
                             </span>
                             <span className="text-muted-foreground/50">•</span>
-                            <span className="text-muted-foreground">
-                              Via Sui Blockchain
+                            <span
+                              onClick={handleViewTransaction}
+                              // disabled={isLoadingBlobId}
+                              className=" hover:text-blue-dark text-blue-base flex items-center  flex-shrink-0 cursor-pointer transition-colors"
+                            >
+                              {isLoadingBlobId ? (
+                                <>
+                                  <Loader2 className="h-4 w-4 animate-spin" />
+                                  <span>Loading...</span>
+                                </>
+                              ) : (
+                                <>
+                                  <ExternalLink className="h-4 w-4" />
+                                  <span>View on Walrus</span>
+                                </>
+                              )}
                             </span>
                           </div>
                         </div>
@@ -608,28 +663,21 @@ export default function EmailViewPage() {
                       </div>
                     )}
 
-                  {/* Blockchain info */}
+                  {/* Blockchain info with View Transaction button */}
                   {latestMail.digest && (
                     <div className="mt-6 p-4 bg-blue-base/10 rounded-lg border border-blue-base/20">
                       <div className="flex items-center justify-between">
-                        <div className="text-sm">
+                        <div className="text-sm flex-1 min-w-0 mr-4">
                           <div className="font-medium text-blue-base mb-1">
                             Blockchain Verified
                           </div>
                           <div className="text-muted-foreground">
                             Transaction:{' '}
-                            <code className="surface-dark px-2 py-1 rounded text-xs">
+                            <code className="surface-dark px-2 py-1 rounded text-xs break-all">
                               {latestMail.digest}
                             </code>
                           </div>
                         </div>
-                        <Button
-                          onClick={handleClaimSui}
-                          size="sm"
-                          className="bg-blue-base hover:bg-blue-dark text-white"
-                        >
-                          View on Explorer
-                        </Button>
                       </div>
                     </div>
                   )}
@@ -672,6 +720,15 @@ export default function EmailViewPage() {
             </div>
           </div>
         )}
+
+        {/* Confirm Delete Modal */}
+        <ConfirmDeleteModal
+          isOpen={showDeleteModal}
+          onClose={() => setShowDeleteModal(false)}
+          onConfirm={handleDeleteMail}
+          isDeleting={isDeleting}
+          emailSubject={latestMail?.subject}
+        />
 
         {/* Reply Composer Overlay */}
         {latestMail && (

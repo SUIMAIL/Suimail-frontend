@@ -24,6 +24,24 @@ export function useFetchMailBodyQuery(mailId: string) {
   })
 }
 
+// export const useFetchMailBlobIdQuery = (
+//   mailId: string,
+//   options?: { enabled?: boolean }
+// ) => {
+//   return useQuery({
+//     queryKey: ['mail-blobId', mailId],
+//     queryFn: async () => {
+//       const response = await fetch(`/mail/blobId/${mailId}`)
+//       if (!response.ok) {
+//         throw new Error('Failed to fetch blob ID')
+//       }
+//       return response.json() // Returns { blobId: "..." }
+//     },
+//     enabled: options?.enabled ?? true,
+//     staleTime: 1000 * 60 * 5, // Cache for 5 minutes
+//   })
+// }
+
 export function useFetchOutboxQuery() {
   return useQuery({
     queryKey: ['outbox-mails'],

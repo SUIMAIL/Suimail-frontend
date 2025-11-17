@@ -1,7 +1,10 @@
 import type { IEmail } from '@/types/generic'
+import { useState } from 'react'
 import { EmailTab } from './EmailTab'
 import { EmailListToolbar } from './EmailListToolbar'
 import { useEmailListContext } from './EmailListContext'
+import { ConfirmDeleteModal } from '@/views/mail/[id]/confirm-delete'
+
 import {
   usePostDeleteMailsMutation,
   usePostMarkMailsAsReadMutation,
@@ -43,6 +46,8 @@ export function EmailList({ mails, refetch }: EmailListProps) {
 
   const { mutateAsync: deleteMails, isPending: isDeletingMails } =
     usePostDeleteMailsMutation()
+
+  const [showDeleteModal, setShowDeleteModal] = useState(false)
 
   const handleSelectEmail = (mail: IEmail) => {
     if (selectedEmails.includes(mail)) {
@@ -103,7 +108,6 @@ export function EmailList({ mails, refetch }: EmailListProps) {
       })
     }
   }
-
   const handleDeleteSelectedEmails = async () => {
     const mailIds = selectedEmails.map(mail => mail.id)
 
@@ -119,38 +123,49 @@ export function EmailList({ mails, refetch }: EmailListProps) {
       mailIds.length > 1 ? 's' : ''
     } deleted`
 
-    if (confirm('Are you sure you want to delete these mails?')) {
-      try {
-        await deleteMails({
-          mailIds,
-          path: isInboxPage ? 'recipient' : 'sender',
-        }).then(() => {
-          mixpanel.track('Delete Mail Success', {
-            mail_ids: mailIds,
-            path: isInboxPage ? 'recipient' : 'sender',
-          })
-          setNotification({
-            message,
-            type: 'success',
-          })
-          queryClient.invalidateQueries({
-            queryKey: isInboxPage ? ['inbox-mails'] : ['outbox-mails'],
-          })
-        })
-      } catch {
-        mixpanel.track('Delete Mail Failure', {
+    try {
+      await deleteMails({
+        mailIds,
+        path: isInboxPage ? 'recipient' : 'sender',
+      }).then(() => {
+        mixpanel.track('Delete Mail Success', {
           mail_ids: mailIds,
           path: isInboxPage ? 'recipient' : 'sender',
-          error_message: 'Failed to delete mails',
         })
         setNotification({
-          message: 'Failed to delete mails',
-          type: 'error',
+          message,
+          type: 'success',
         })
-      }
+        setShowDeleteModal(false) // Close modal on success
+        queryClient.invalidateQueries({
+          queryKey: isInboxPage ? ['inbox-mails'] : ['outbox-mails'],
+        })
+      })
+    } catch {
+      mixpanel.track('Delete Mail Failure', {
+        mail_ids: mailIds,
+        path: isInboxPage ? 'recipient' : 'sender',
+        error_message: 'Failed to delete mails',
+      })
+      setNotification({
+        message: 'Failed to delete mails',
+        type: 'error',
+      })
     }
   }
 
+  const handleDeleteClick = () => {
+    const mailIds = selectedEmails.map(mail => mail.id)
+
+    if (!mailIds.length) {
+      setNotification({
+        message: 'No mails to delete',
+        type: 'error',
+      })
+      return
+    }
+    setShowDeleteModal(true)
+  }
   const sortedEmails = useMemo(() => {
     return sortEmailsByLatest(safeMails)
   }, [safeMails])
@@ -163,7 +178,7 @@ export function EmailList({ mails, refetch }: EmailListProps) {
           hasSelectedEmails={hasSelectedEmails}
           handleSelectAllEmails={handleSelectAllEmails}
           handleMarkSelectedEmailsAsRead={handleMarkSelectedEmailsAsRead}
-          handleDeleteSelectedEmails={handleDeleteSelectedEmails}
+          handleDeleteSelectedEmails={handleDeleteClick}
         />
 
         <span className="text-sm text-muted-foreground">
@@ -188,6 +203,13 @@ export function EmailList({ mails, refetch }: EmailListProps) {
           </div>
         )}
       </div>
+
+      <ConfirmDeleteModal
+        isOpen={showDeleteModal}
+        onClose={() => setShowDeleteModal(false)}
+        onConfirm={handleDeleteSelectedEmails}
+        isDeleting={isDeletingMails}
+      />
     </div>
   )
 }
