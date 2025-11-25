@@ -10,6 +10,7 @@ import { Button } from '@/components/ui/button'
 import { isValidSuimailAddress } from '@/utils/helpers'
 import { useToastContext } from '@/components/ui/toast'
 import { useCheckSuimailNsAvailabilityQuery } from '@/hooks/onboarding'
+import { useCurrentAccount } from '@mysten/dapp-kit'
 
 interface FormSectionProps {
   handleSubmit: (suimailNs: string) => void
@@ -25,22 +26,24 @@ const sampleAddresses = [
 type Availability = '' | 'checking' | 'available' | 'taken' | 'invalid'
 
 export function FormSection({ handleSubmit, isProcessing }: FormSectionProps) {
-  const [address, setAddress] = useState('')
+  const [nsName, setNsName] = useState('')
+  const currentAccount = useCurrentAccount()
 
   const { data: availabilityData, isLoading: isCheckingAvailability } =
-    useCheckSuimailNsAvailabilityQuery(address, {
-      enabled: isValidSuimailAddress(address),
+    useCheckSuimailNsAvailabilityQuery(nsName, currentAccount?.address, {
+      enabled: isValidSuimailAddress(nsName),
     })
 
   const availability: Availability = useMemo(() => {
+    console.log('Current Account', currentAccount?.address)
     if (isCheckingAvailability) {
       return 'checking'
     }
     if (availabilityData?.available) {
       return 'available'
     }
-    return isValidSuimailAddress(address) ? 'taken' : ''
-  }, [isCheckingAvailability, availabilityData, address])
+    return isValidSuimailAddress(nsName) ? 'taken' : ''
+  }, [isCheckingAvailability, availabilityData, nsName])
 
   const handleAddressChange = (value: string) => {
     // Remove @suimailapp suffix if it exists to prevent double appending
@@ -53,26 +56,26 @@ export function FormSection({ handleSubmit, isProcessing }: FormSectionProps) {
 
     // Smart @ handling - auto-complete to @suimailapp when user types @
     if (cleanValue.endsWith('@') && !cleanValue.endsWith('@suimailapp')) {
-      setAddress(cleanValue + 'suimailapp')
+      setNsName(cleanValue + 'suimailapp')
     } else {
-      setAddress(cleanValue)
+      setNsName(cleanValue)
     }
   }
 
   const handleBlur = () => {
     // Auto-append @suimailapp when user finishes typing (on blur)
-    const cleanAddress = address.replace(/@suimailapp$/g, '')
+    const cleanAddress = nsName.replace(/@suimailapp$/g, '')
     if (cleanAddress && !cleanAddress.includes('@')) {
-      setAddress(cleanAddress + '@suimailapp')
+      setNsName(cleanAddress + '@suimailapp')
     } else if (cleanAddress.endsWith('@')) {
-      setAddress(cleanAddress + 'suimailapp')
+      setNsName(cleanAddress + 'suimailapp')
     }
   }
 
   const onSubmit = (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault()
     if (availability === 'available') {
-      handleSubmit(address)
+      handleSubmit(nsName)
     }
   }
 
@@ -93,13 +96,13 @@ export function FormSection({ handleSubmit, isProcessing }: FormSectionProps) {
                   id="name"
                   type="text"
                   placeholder="e.g. aliceweb3"
-                  value={address}
+                  value={nsName}
                   onChange={e => handleAddressChange(e.target.value)}
                   onBlur={handleBlur}
                   onKeyDown={e => {
                     // Prevent deleting @suimailapp
                     const cursorPos = e.currentTarget.selectionStart || 0
-                    const domainStart = address.indexOf('@suimailapp')
+                    const domainStart = nsName.indexOf('@suimailapp')
                     if (
                       (e.key === 'Backspace' || e.key === 'Delete') &&
                       domainStart !== -1 &&
@@ -110,7 +113,7 @@ export function FormSection({ handleSubmit, isProcessing }: FormSectionProps) {
                   }}
                   onClick={e => {
                     // Keep cursor before @suimailapp
-                    const domainStart = address.indexOf('@suimailapp')
+                    const domainStart = nsName.indexOf('@suimailapp')
                     if (domainStart !== -1) {
                       e.currentTarget.setSelectionRange(
                         domainStart,
@@ -121,18 +124,18 @@ export function FormSection({ handleSubmit, isProcessing }: FormSectionProps) {
                   className="pr-10"
                   required
                 />
-                {address && (
+                {nsName && (
                   <motion.button
                     initial={{ opacity: 0, scale: 0.8 }}
                     animate={{ opacity: 1, scale: 1 }}
                     type="button"
-                    onClick={() => setAddress('')}
+                    onClick={() => setNsName('')}
                     className="absolute right-3 top-[30%] -translate-y-1/2 text-muted-foreground hover:text-foreground"
                   >
                     <X className="h-4 w-4" />
                   </motion.button>
                 )}
-                {address.includes('@suimailapp') && (
+                {nsName.includes('@suimailapp') && (
                   <motion.div
                     initial={{ opacity: 0, scale: 0.95 }}
                     animate={{ opacity: 1, scale: 1 }}
@@ -151,14 +154,14 @@ export function FormSection({ handleSubmit, isProcessing }: FormSectionProps) {
               {availability === 'available' && (
                 <p className="text-sm text-green-600 mt-1 flex items-center gap-1">
                   <span>✅</span>
-                  <span className="font-mono">{address}</span>
+                  <span className="font-mono">{nsName}</span>
                   <span>is available</span>
                 </p>
               )}
               {availability === 'taken' && (
                 <p className="text-sm text-red-600 mt-1 flex items-center gap-1">
                   <span>❌</span>
-                  <span className="font-mono">{address}</span>
+                  <span className="font-mono">{nsName}</span>
                   <span>is already taken</span>
                 </p>
               )}
@@ -202,8 +205,8 @@ export function FormSection({ handleSubmit, isProcessing }: FormSectionProps) {
           </div>
 
           <SampleAddressStack
-            address={address}
-            selectSampleAddress={setAddress}
+            address={nsName}
+            selectSampleAddress={setNsName}
           />
         </div>
       </motion.div>

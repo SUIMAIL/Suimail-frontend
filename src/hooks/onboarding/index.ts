@@ -7,7 +7,8 @@ import {
 import type { AxiosError } from 'axios'
 
 export const useCheckSuimailNsAvailabilityQuery = (
-  address: string,
+  ns_name: string,
+  address?: string,
   options?: Omit<
     UseQueryOptions<{ available: boolean; message: string }, AxiosError>,
     'queryKey' | 'queryFn'
@@ -15,10 +16,11 @@ export const useCheckSuimailNsAvailabilityQuery = (
 ) => {
   return useQuery({
     ...(options ?? {}),
-    queryKey: ['suimail-ns-availability', address],
+    queryKey: ['suimail-ns-availability', ns_name],
     queryFn: async ({ signal }) => {
-      return await httpService.get(`/onboarding/check-address/${address}`, {
+      return await httpService.get(`/onboarding/check-address/`, {
         signal,
+        params: { ns_name, address },
       })
     },
     gcTime: 0,
