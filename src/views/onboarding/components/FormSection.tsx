@@ -35,7 +35,7 @@ export function FormSection({ handleSubmit, isProcessing }: FormSectionProps) {
     })
 
   const availability: Availability = useMemo(() => {
-    console.log('Current Account', currentAccount?.address)
+    // console.log('Current Account', currentAccount?.address)
     if (isCheckingAvailability) {
       return 'checking'
     }

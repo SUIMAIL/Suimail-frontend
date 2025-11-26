@@ -408,19 +408,32 @@ export default function ComposePage() {
         }
       }
 
-      const formData = new FormData()
-      formData.append('recipient', data.recipient)
-      formData.append('subject', data.subject)
-      formData.append('body', data.message)
-      formData.append('mailBlobId', mailBlobId)
-      formData.append('mailObjectId', mailObjectId)
+      // const formData = new FormData()
+      // formData.append('recipient', data.recipient)
+      // formData.append('subject', data.subject)
+      // formData.append('mailBlobId', mailBlobId)
+      // formData.append('mailObjectId', mailObjectId)
 
-      if (attachmentBlobIds.length > 0) {
-        formData.append('attachmentBlobIds', JSON.stringify(attachmentBlobIds))
-      }
+      // if (attachmentBlobIds.length > 0) {
+      //   formData.append('attachmentBlobIds', JSON.stringify(attachmentBlobIds))
+      // }
 
-      if (createEscrowTxDigest.length > 0 && createEscrowTxDigest !== 'false') {
-        formData.append('digest', createEscrowTxDigest)
+      // if (createEscrowTxDigest.length > 0 && createEscrowTxDigest !== 'false') {
+      //   formData.append('escrowDigest', createEscrowTxDigest)
+      // }
+
+      const payload = {
+        recipient: data.recipient,
+        subject: data.subject,
+        mailBlobId: mailBlobId,
+        mailObjectId: mailObjectId,
+        // Send the array directly, no need to JSON.stringify for JSON payloads
+        attachmentBlobIds:
+          attachmentBlobIds.length > 0 ? attachmentBlobIds : [],
+        escrowDigest:
+          createEscrowTxDigest.length > 0 && createEscrowTxDigest !== 'false'
+            ? createEscrowTxDigest
+            : undefined,
       }
 
       navigate('/mail/inbox')
@@ -430,7 +443,7 @@ export default function ComposePage() {
         type: 'success',
       })
 
-      sendMail(formData)
+      sendMail(payload)
         .then(async () => {
           setNotification({
             message: 'Mail sent successfully',

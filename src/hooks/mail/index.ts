@@ -79,12 +79,21 @@ export function usePostDraftMailMutation() {
   })
 }
 
+interface SendMailPayload {
+  recipient: string
+  subject: string
+  mailBlobId: string
+  mailObjectId: string
+  attachmentBlobIds: string[]
+  escrowDigest?: string
+}
+
 export function usePostSendMailMutation() {
   return useMutation({
-    mutationFn: async (mailContent: FormData) => {
+    mutationFn: async (mailContent: SendMailPayload) => {
       return await httpService.post('/mail/send', mailContent, {
         headers: {
-          'Content-Type': 'multipart/form-data',
+          'Content-Type': 'application/json',
         },
       })
     },
