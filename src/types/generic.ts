@@ -2,6 +2,7 @@ import type { LucideIcon } from 'lucide-react'
 import type { IAttachmentType } from './attachment'
 
 export interface IUser {
+  id: string
   address: string
   suimailNs?: string
   mailFee?: number
@@ -15,25 +16,21 @@ export interface IEmailAttachment {
   fileType: IAttachmentType
   content: string
 }
+
 export interface IEmail {
   id: string
   subject: string
-  body: string
-  sender: Pick<IUser, 'suimailNs' | 'imageUrl'>
-  recipient: Pick<IUser, 'suimailNs' | 'imageUrl'>
-  readAt?: string
+  mailBlobId: string
+  mailObjectId: string
+  starred: boolean
   createdAt: string
-  digest?: string
+  readAt?: string
+  escrowDigest?: string
   parentMailId?: string
-  metadata?: {
-    sender: {
-      identifier: string
-    }
-    recipient: {
-      identifier: string
-    }
-  }
-  attachments?: IEmailAttachment[]
+  metadata?: Record<string, any> | null
+  attachmentBlobIds?: string[]
+  sender: Pick<IUser, 'suimailNs' | 'id' | 'imageUrl'>
+  recipient: Pick<IUser, 'suimailNs' | 'id' | 'imageUrl'>
 }
 
 export interface IPlan {

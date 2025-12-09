@@ -15,7 +15,7 @@ export default function InboxPage() {
   const [isSearchActive, setIsSearchActive] = useState(false)
 
   const inboxMails = useMemo(() => {
-    return inbox?.data || []
+    return inbox?.inbox || []
   }, [inbox])
 
   const handleSearchResults = (results: IEmail[]) => {
@@ -30,6 +30,7 @@ export default function InboxPage() {
 
   // Display search results when searching, otherwise show inbox
   const displayMails = isSearchActive ? searchResults : inboxMails
+  console.log('list', displayMails)
 
   return (
     <PageLayout loading={isFetching} isError={isError}>

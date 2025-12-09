@@ -8,8 +8,8 @@ import {
   Trash2,
   Reply,
   Loader2,
-  ChevronDown,
-  ChevronRight,
+  // ChevronDown,
+  // ChevronRight,
   MoreVertical,
   User,
   ExternalLink,
@@ -34,176 +34,176 @@ import RenderAttachments from './components/RenderAttachments'
 import { EmailBodyFormatter } from './email-format'
 import { httpService } from '@/api'
 
-const QuotedMessage = ({
-  email,
-  isExpanded,
-  onToggle,
-  profileImage,
-  isLoadingProfileImage,
-}: {
-  email: IEmail
-  isExpanded: boolean
-  onToggle: () => void
-  profileImage?: string
-  isLoadingProfileImage: boolean
-}) => {
-  return (
-    <div className="border border-border rounded-lg mb-4 surface-dark elevation-1">
-      {/* Collapsed header */}
-      <div
-        className="flex items-center justify-between p-3 cursor-pointer hover:bg-accent transition-colors"
-        onClick={onToggle}
-      >
-        <div className="flex items-center space-x-3 min-w-0 flex-1">
-          <div className="flex-shrink-0">
-            {isExpanded ? (
-              <ChevronDown className="h-4 w-4 text-muted-foreground" />
-            ) : (
-              <ChevronRight className="h-4 w-4 text-muted-foreground" />
-            )}
-          </div>
-          {isLoadingProfileImage ? (
-            <Skeleton className="w-10 h-10 rounded-full" />
-          ) : profileImage ? (
-            <img
-              src={profileImage}
-              alt={email.sender.suimailNs || 'User'}
-              className="w-10 h-10 rounded-full object-cover border-2 border-border shadow-sm"
-            />
-          ) : (
-            <div className="flex items-center justify-center w-10 h-10 rounded-full surface-base border border-border">
-              <User className="size-6 text-muted-foreground" />
-            </div>
-          )}
+// const QuotedMessage = ({
+//   email,
+//   isExpanded,
+//   onToggle,
+//   profileImage,
+//   isLoadingProfileImage,
+// }: {
+//   email: IEmail
+//   isExpanded: boolean
+//   onToggle: () => void
+//   profileImage?: string
+//   isLoadingProfileImage: boolean
+// }) => {
+//   return (
+//     <div className="border border-border rounded-lg mb-4 surface-dark elevation-1">
+//       {/* Collapsed header */}
+//       <div
+//         className="flex items-center justify-between p-3 cursor-pointer hover:bg-accent transition-colors"
+//         onClick={onToggle}
+//       >
+//         <div className="flex items-center space-x-3 min-w-0 flex-1">
+//           <div className="flex-shrink-0">
+//             {isExpanded ? (
+//               <ChevronDown className="h-4 w-4 text-muted-foreground" />
+//             ) : (
+//               <ChevronRight className="h-4 w-4 text-muted-foreground" />
+//             )}
+//           </div>
+//           {isLoadingProfileImage ? (
+//             <Skeleton className="w-10 h-10 rounded-full" />
+//           ) : profileImage ? (
+//             <img
+//               src={profileImage}
+//               alt={email.sender.suimailNs || 'User'}
+//               className="w-10 h-10 rounded-full object-cover border-2 border-border shadow-sm"
+//             />
+//           ) : (
+//             <div className="flex items-center justify-center w-10 h-10 rounded-full surface-base border border-border">
+//               <User className="size-6 text-muted-foreground" />
+//             </div>
+//           )}
 
-          <div className="min-w-0 flex-1">
-            <div className="flex items-center space-x-2">
-              <span className="text-sm font-medium text-foreground truncate">
-                {email.sender.suimailNs}
-              </span>
-              <span className="text-xs text-muted-foreground flex-shrink-0">
-                {(() => {
-                  const date = new Date(email.createdAt)
-                  const now = new Date()
-                  const diffTime = Math.abs(now.getTime() - date.getTime())
-                  const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24))
-                  if (diffDays === 1) return 'Today'
-                  if (diffDays === 2) return 'Yesterday'
-                  if (diffDays <= 7)
-                    return date.toLocaleDateString('en-US', {
-                      weekday: 'short',
-                    })
-                  return date.toLocaleDateString('en-US', {
-                    month: 'short',
-                    day: 'numeric',
-                  })
-                })()}
-              </span>
-            </div>
-            {!isExpanded && (
-              <div className="text-xs text-muted-foreground truncate mt-1">
-                {email.body.replace(/<[^>]*>/g, '').substring(0, 100)}...
-              </div>
-            )}
-          </div>
-        </div>
-        <div className="flex items-center space-x-1 ml-2">
-          <Button
-            size="icon"
-            variant="ghost"
-            className="p-1 h-6 w-6 rounded-full hover:bg-accent"
-            onClick={e => {
-              e.stopPropagation()
-            }}
-          >
-            <MoreVertical className="h-3 w-3 text-muted-foreground" />
-          </Button>
-        </div>
-      </div>
+//           <div className="min-w-0 flex-1">
+//             <div className="flex items-center space-x-2">
+//               <span className="text-sm font-medium text-foreground truncate">
+//                 {email.sender.suimailNs}
+//               </span>
+//               <span className="text-xs text-muted-foreground flex-shrink-0">
+//                 {(() => {
+//                   const date = new Date(email.createdAt)
+//                   const now = new Date()
+//                   const diffTime = Math.abs(now.getTime() - date.getTime())
+//                   const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24))
+//                   if (diffDays === 1) return 'Today'
+//                   if (diffDays === 2) return 'Yesterday'
+//                   if (diffDays <= 7)
+//                     return date.toLocaleDateString('en-US', {
+//                       weekday: 'short',
+//                     })
+//                   return date.toLocaleDateString('en-US', {
+//                     month: 'short',
+//                     day: 'numeric',
+//                   })
+//                 })()}
+//               </span>
+//             </div>
+//             {!isExpanded && (
+//               <div className="text-xs text-muted-foreground truncate mt-1">
+//                 {email.body.replace(/<[^>]*>/g, '').substring(0, 100)}...
+//               </div>
+//             )}
+//           </div>
+//         </div>
+//         <div className="flex items-center space-x-1 ml-2">
+//           <Button
+//             size="icon"
+//             variant="ghost"
+//             className="p-1 h-6 w-6 rounded-full hover:bg-accent"
+//             onClick={e => {
+//               e.stopPropagation()
+//             }}
+//           >
+//             <MoreVertical className="h-3 w-3 text-muted-foreground" />
+//           </Button>
+//         </div>
+//       </div>
 
-      {/* Expanded content */}
-      {isExpanded && (
-        <div className="border-t border-border surface-light">
-          {/* Full email header */}
-          <div className="p-4 border-b border-border surface-dark">
-            <div className="flex items-start justify-between">
-              <div className="flex items-start space-x-3">
-                {isLoadingProfileImage ? (
-                  <Skeleton className="w-10 h-10 rounded-full" />
-                ) : profileImage ? (
-                  <img
-                    src={profileImage}
-                    alt={email.sender.suimailNs || 'User'}
-                    className="w-10 h-10 rounded-full object-cover border-2 border-border shadow-sm"
-                  />
-                ) : (
-                  <div className="flex items-center justify-center w-10 h-10 rounded-full surface-base border border-border">
-                    <User className="size-6 text-muted-foreground" />
-                  </div>
-                )}
+//       {/* Expanded content */}
+//       {isExpanded && (
+//         <div className="border-t border-border surface-light">
+//           {/* Full email header */}
+//           <div className="p-4 border-b border-border surface-dark">
+//             <div className="flex items-start justify-between">
+//               <div className="flex items-start space-x-3">
+//                 {isLoadingProfileImage ? (
+//                   <Skeleton className="w-10 h-10 rounded-full" />
+//                 ) : profileImage ? (
+//                   <img
+//                     src={profileImage}
+//                     alt={email.sender.suimailNs || 'User'}
+//                     className="w-10 h-10 rounded-full object-cover border-2 border-border shadow-sm"
+//                   />
+//                 ) : (
+//                   <div className="flex items-center justify-center w-10 h-10 rounded-full surface-base border border-border">
+//                     <User className="size-6 text-muted-foreground" />
+//                   </div>
+//                 )}
 
-                <div>
-                  <div className="font-medium text-foreground">
-                    {email.sender.suimailNs}
-                  </div>
-                  <div className="text-sm text-muted-foreground mt-1">
-                    <div>to me</div>
-                    <div className="mt-1">
-                      {new Date(email.createdAt).toLocaleDateString('en-US', {
-                        weekday: 'long',
-                        year: 'numeric',
-                        month: 'long',
-                        day: 'numeric',
-                        hour: '2-digit',
-                        minute: '2-digit',
-                      })}
-                    </div>
-                  </div>
-                </div>
-              </div>
-              <div className="flex items-center space-x-1">
-                <Tooltip>
-                  <TooltipTrigger asChild>
-                    <Button
-                      size="icon"
-                      variant="ghost"
-                      className="p-2 h-8 w-8 rounded-full hover:bg-accent"
-                    >
-                      <Reply className="h-4 w-4 text-muted-foreground" />
-                    </Button>
-                  </TooltipTrigger>
-                  <TooltipContent>Reply</TooltipContent>
-                </Tooltip>
-                <Tooltip>
-                  <TooltipTrigger asChild>
-                    <Button
-                      size="icon"
-                      variant="ghost"
-                      className="p-2 h-8 w-8 rounded-full hover:bg-accent"
-                    >
-                      <MoreVertical className="h-4 w-4 text-muted-foreground" />
-                    </Button>
-                  </TooltipTrigger>
-                  <TooltipContent>More options</TooltipContent>
-                </Tooltip>
-              </div>
-            </div>
-          </div>
+//                 <div>
+//                   <div className="font-medium text-foreground">
+//                     {email.sender.suimailNs}
+//                   </div>
+//                   <div className="text-sm text-muted-foreground mt-1">
+//                     <div>to me</div>
+//                     <div className="mt-1">
+//                       {new Date(email.createdAt).toLocaleDateString('en-US', {
+//                         weekday: 'long',
+//                         year: 'numeric',
+//                         month: 'long',
+//                         day: 'numeric',
+//                         hour: '2-digit',
+//                         minute: '2-digit',
+//                       })}
+//                     </div>
+//                   </div>
+//                 </div>
+//               </div>
+//               <div className="flex items-center space-x-1">
+//                 <Tooltip>
+//                   <TooltipTrigger asChild>
+//                     <Button
+//                       size="icon"
+//                       variant="ghost"
+//                       className="p-2 h-8 w-8 rounded-full hover:bg-accent"
+//                     >
+//                       <Reply className="h-4 w-4 text-muted-foreground" />
+//                     </Button>
+//                   </TooltipTrigger>
+//                   <TooltipContent>Reply</TooltipContent>
+//                 </Tooltip>
+//                 <Tooltip>
+//                   <TooltipTrigger asChild>
+//                     <Button
+//                       size="icon"
+//                       variant="ghost"
+//                       className="p-2 h-8 w-8 rounded-full hover:bg-accent"
+//                     >
+//                       <MoreVertical className="h-4 w-4 text-muted-foreground" />
+//                     </Button>
+//                   </TooltipTrigger>
+//                   <TooltipContent>More options</TooltipContent>
+//                 </Tooltip>
+//               </div>
+//             </div>
+//           </div>
 
-          {/* Email content */}
-          <div className="p-4">
-            <EmailBodyFormatter body={email.body} isQuoted={true} />
-            {email.attachments && email.attachments.length > 0 && (
-              <div className="mt-4">
-                <RenderAttachments attachments={email.attachments} />
-              </div>
-            )}
-          </div>
-        </div>
-      )}
-    </div>
-  )
-}
+//           {/* Email content */}
+//           <div className="p-4">
+//             <EmailBodyFormatter body={email.body} isQuoted={true} />
+//             {email.attachments && email.attachments.length > 0 && (
+//               <div className="mt-4">
+//                 <RenderAttachments attachments={email.attachments} />
+//               </div>
+//             )}
+//           </div>
+//         </div>
+//       )}
+//     </div>
+//   )
+// }
 
 export default function EmailViewPage() {
   const navigate = useNavigate()
@@ -213,7 +213,7 @@ export default function EmailViewPage() {
   const { id } = useParams<{ id: string }>()
   const [txDigest, setTxDigest] = useState<string>('')
   const [isReplying, setIsReplying] = useState(false)
-  const [expandedQuotes, setExpandedQuotes] = useState<Set<string>>(new Set())
+  // const [expandedQuotes, setExpandedQuotes] = useState<Set<string>>(new Set())
   const [isLoadingBlobId, setIsLoadingBlobId] = useState(false)
   const [showDeleteModal, setShowDeleteModal] = useState(false)
   const { claimEscrowTx } = useClaimEscrowTx()
@@ -281,7 +281,8 @@ export default function EmailViewPage() {
   }
 
   const latestMail = thread.length > 0 ? thread[0] : mail
-  const quotedMessages = thread.slice(1)
+  console.log('latestMail.mail', latestMail.mail.recipientId.suimailNs)
+  // const quotedMessages = thread.slice(1)
 
   useEffect(() => {
     if (latestMail?.digest) {
@@ -289,17 +290,17 @@ export default function EmailViewPage() {
     }
   }, [latestMail, firstCreatedObjectId])
 
-  const toggleQuotedMessage = (emailId: string) => {
-    setExpandedQuotes(prev => {
-      const newSet = new Set(prev)
-      if (newSet.has(emailId)) {
-        newSet.delete(emailId)
-      } else {
-        newSet.add(emailId)
-      }
-      return newSet
-    })
-  }
+  // const toggleQuotedMessage = (emailId: string) => {
+  //   setExpandedQuotes(prev => {
+  //     const newSet = new Set(prev)
+  //     if (newSet.has(emailId)) {
+  //       newSet.delete(emailId)
+  //     } else {
+  //       newSet.add(emailId)
+  //     }
+  //     return newSet
+  //   })
+  // }
 
   // Fetch blob ID and open Walrus Scan
   const handleViewTransaction = async () => {
@@ -527,7 +528,7 @@ export default function EmailViewPage() {
         <div className="flex-1 overflow-y-auto smooth-scroll">
           <div className="max-w-4xl mx-auto">
             {/* Quoted/Previous Messages */}
-            {quotedMessages.length > 0 && (
+            {/* {quotedMessages.length > 0 && (
               <div className="p-4 sm:p-6 space-y-3">
                 {quotedMessages.reverse().map(email => (
                   <QuotedMessage
@@ -540,7 +541,7 @@ export default function EmailViewPage() {
                   />
                 ))}
               </div>
-            )}
+            )} */}
 
             {/* Latest/Current Message */}
             {latestMail && (
@@ -566,7 +567,7 @@ export default function EmailViewPage() {
                       <div className="min-w-0 flex-1">
                         <div className="flex items-center space-x-2 mb-1">
                           <h2 className="text-lg font-semibold text-foreground">
-                            {latestMail.sender.suimailNs}
+                            {latestMail.mail.senderId.suimailNs}
                           </h2>
                           <span className="px-2 py-1 bg-blue-base/10 text-blue-base text-xs font-medium rounded-full border border-blue-base/20">
                             Verified
@@ -711,7 +712,8 @@ export default function EmailViewPage() {
                 >
                   <div className="flex items-center justify-between">
                     <span className="text-muted-foreground text-sm">
-                      Click here to reply to {latestMail.sender.suimailNs}...
+                      Click here to reply to{' '}
+                      {latestMail.mail.senderId.suimailNs}...
                     </span>
                     <Reply className="h-4 w-4 text-muted-foreground" />
                   </div>

@@ -1,5 +1,5 @@
 import parse from 'html-react-parser'
-import { ExternalLink } from 'lucide-react'
+// import { ExternalLink } from 'lucide-react'
 
 // Enhanced email body formatter component that handles both HTML and plain text
 export const EmailBodyFormatter = ({
@@ -30,105 +30,106 @@ export const EmailBodyFormatter = ({
   }
 
   // Original plain text formatting logic for backward compatibility
-  const formatEmailBody = (text: string) => {
-    // Split by paragraphs first
-    const paragraphs = text.split('\n\n').filter(p => p.trim())
+  // const formatEmailBody = (text: string) => {
+  //   // Split by paragraphs first
+  //   console.log('text', text)
+  //   const paragraphs = text.split('\n\n').filter(p => p.trim())
 
-    return paragraphs.map((paragraph, pIndex) => {
-      // Handle each line within the paragraph
-      const lines = paragraph.split('\n')
+  //   return paragraphs.map((paragraph, pIndex) => {
+  //     // Handle each line within the paragraph
+  //     const lines = paragraph.split('\n')
 
-      return (
-        <div
-          key={pIndex}
-          className={`mb-4 ${
-            isQuoted ? 'text-muted-foreground' : 'text-foreground'
-          }`}
-        >
-          {lines.map((line, lIndex) => {
-            // Check if line is a quote (starts with >)
-            if (line.trim().startsWith('>')) {
-              return (
-                <div
-                  key={lIndex}
-                  className="border-l-2 border-border pl-3 ml-2 mb-2"
-                >
-                  <span className="text-muted-foreground italic">
-                    {formatTextWithLinks(line.replace(/^>\s*/, ''))}
-                  </span>
-                </div>
-              )
-            }
+  //     return (
+  //       <div
+  //         key={pIndex}
+  //         className={`mb-4 ${
+  //           isQuoted ? 'text-muted-foreground' : 'text-foreground'
+  //         }`}
+  //       >
+  //         {lines.map((line, lIndex) => {
+  //           // Check if line is a quote (starts with >)
+  //           if (line.trim().startsWith('>')) {
+  //             return (
+  //               <div
+  //                 key={lIndex}
+  //                 className="border-l-2 border-border pl-3 ml-2 mb-2"
+  //               >
+  //                 <span className="text-muted-foreground italic">
+  //                   {formatTextWithLinks(line.replace(/^>\s*/, ''))}
+  //                 </span>
+  //               </div>
+  //             )
+  //           }
 
-            // Check if line is a header (email signature style)
-            if (line.match(/^(From|To|Subject|Date|Sent):\s/i)) {
-              return (
-                <div
-                  key={lIndex}
-                  className="text-sm text-muted-foreground font-medium mb-1"
-                >
-                  {formatTextWithLinks(line)}
-                </div>
-              )
-            }
+  //           // Check if line is a header (email signature style)
+  //           if (line.match(/^(From|To|Subject|Date|Sent):\s/i)) {
+  //             return (
+  //               <div
+  //                 key={lIndex}
+  //                 className="text-sm text-muted-foreground font-medium mb-1"
+  //               >
+  //                 {formatTextWithLinks(line)}
+  //               </div>
+  //             )
+  //           }
 
-            // Regular paragraph line
-            return (
-              <div
-                key={lIndex}
-                className={`leading-relaxed ${lIndex > 0 ? 'mt-1' : ''}`}
-              >
-                {formatTextWithLinks(line)}
-              </div>
-            )
-          })}
-        </div>
-      )
-    })
-  }
+  //           // Regular paragraph line
+  //           return (
+  //             <div
+  //               key={lIndex}
+  //               className={`leading-relaxed ${lIndex > 0 ? 'mt-1' : ''}`}
+  //             >
+  //               {formatTextWithLinks(line)}
+  //             </div>
+  //           )
+  //         })}
+  //       </div>
+  //     )
+  //   })
+  // }
 
-  const formatTextWithLinks = (text: string) => {
-    // Enhanced URL regex to catch more patterns
-    const urlRegex =
-      /(https?:\/\/[^\s<>"{}|\\^`[\]]+[^\s<>"{}|\\^`[\].,;:])|(\b[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}\b)/g
+  // const formatTextWithLinks = (text: string) => {
+  //   // Enhanced URL regex to catch more patterns
+  //   const urlRegex =
+  //     /(https?:\/\/[^\s<>"{}|\\^`[\]]+[^\s<>"{}|\\^`[\].,;:])|(\b[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}\b)/g
 
-    const parts = text.split(urlRegex)
+  //   const parts = text.split(urlRegex)
 
-    return parts.map((part, index) => {
-      if (!part) return null
+  //   return parts.map((part, index) => {
+  //     if (!part) return null
 
-      // Check if it's a URL
-      if (part.match(/^https?:\/\//)) {
-        return (
-          <a
-            key={index}
-            href={part}
-            target="_blank"
-            rel="noopener noreferrer"
-            className="text-blue-base hover:text-blue-dark hover:underline inline-flex items-center transition-colors"
-          >
-            {part.length > 50 ? `${part.substring(0, 47)}...` : part}
-            <ExternalLink className="h-3 w-3 ml-1 opacity-70" />
-          </a>
-        )
-      }
+  //     // Check if it's a URL
+  //     if (part.match(/^https?:\/\//)) {
+  //       return (
+  //         <a
+  //           key={index}
+  //           href={part}
+  //           target="_blank"
+  //           rel="noopener noreferrer"
+  //           className="text-blue-base hover:text-blue-dark hover:underline inline-flex items-center transition-colors"
+  //         >
+  //           {part.length > 50 ? `${part.substring(0, 47)}...` : part}
+  //           <ExternalLink className="h-3 w-3 ml-1 opacity-70" />
+  //         </a>
+  //       )
+  //     }
 
-      // Check if it's an email
-      if (part.match(/^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}$/)) {
-        return (
-          <a
-            key={index}
-            href={`mailto:${part}`}
-            className="text-blue-base hover:text-blue-dark hover:underline transition-colors"
-          >
-            {part}
-          </a>
-        )
-      }
+  //     // Check if it's an email
+  //     if (part.match(/^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}$/)) {
+  //       return (
+  //         <a
+  //           key={index}
+  //           href={`mailto:${part}`}
+  //           className="text-blue-base hover:text-blue-dark hover:underline transition-colors"
+  //         >
+  //           {part}
+  //         </a>
+  //       )
+  //     }
 
-      return <span key={index}>{part}</span>
-    })
-  }
+  //     return <span key={index}>{part}</span>
+  //   })
+  // }
 
-  return <div className="max-w-none">{formatEmailBody(body)}</div>
+  // return <div className="max-w-none">{formatEmailBody(body)}</div>
 }

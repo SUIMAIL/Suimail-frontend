@@ -1,7 +1,7 @@
 import { ChevronDown, ChevronRight, Star, MoreVertical } from 'lucide-react'
 import { Button } from '@/components/ui/button'
-import { EmailBodyFormatter } from '../email-format'
-import RenderAttachments from './RenderAttachments'
+// import { EmailBodyFormatter } from '../email-format'
+// import RenderAttachments from './RenderAttachments'
 import type { IEmail } from '@/types/generic'
 
 import { Skeleton } from '@/components/ui/skeleton'
@@ -69,13 +69,13 @@ export const QuotedMessage = ({
       </div>
     </div>
 
-    {isExpanded && (
+    {/* {isExpanded && (
       <div className="border-t border-gray-200 bg-white p-4">
         <EmailBodyFormatter body={email.body} isQuoted={true} />
         {email.attachments && email.attachments.length > 0 && (
           <RenderAttachments attachments={email.attachments} />
         )}
       </div>
-    )}
+    )} */}
   </div>
 )

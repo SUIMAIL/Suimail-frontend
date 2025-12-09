@@ -6,7 +6,7 @@ import type { Editor as TinyMCEEditor } from 'tinymce'
 import type { IEmail } from '@/types/generic'
 
 interface ReplyComposerProps {
-  originalEmail: IEmail
+  originalEmail: { mail: IEmail }
   onSend: (replyData: {
     to: string
     subject: string
@@ -71,9 +71,10 @@ export function ReplyComposer({
   }
 
   // Generate reply subject (avoid double Re:)
-  const replySubject = originalEmail.subject.startsWith('Re: ')
-    ? originalEmail.subject
-    : `Re: ${originalEmail.subject}`
+  console.log('originalEmail', originalEmail.mail)
+  const replySubject = originalEmail.mail.subject.startsWith('Re: ')
+    ? originalEmail.mail.subject
+    : `Re: ${originalEmail.mail.subject}`
 
   const handleSend = useCallback(async () => {
     const bodyText = editorRef.current?.getContent({ format: 'text' }) || ''
@@ -91,11 +92,11 @@ export function ReplyComposer({
 
     try {
       await onSend({
-        to: originalEmail.sender.suimailNs || '',
+        to: originalEmail.mail.sender.suimailNs || '',
         subject: replySubject,
         body: bodyHtml,
-        inReplyTo: originalEmail.id,
-        originalMessageId: originalEmail.id,
+        inReplyTo: originalEmail.mail.id,
+        originalMessageId: originalEmail.mail.id,
       })
       setReplyBody('')
       editorRef.current?.setContent('')
@@ -155,7 +156,7 @@ export function ReplyComposer({
           <div>
             <h3 className="font-semibold text-foreground">Reply</h3>
             <p className="text-sm text-muted-foreground">
-              to {originalEmail.sender.suimailNs}
+              to {originalEmail.mail.sender.suimailNs}
             </p>
           </div>
         </div>
@@ -196,7 +197,7 @@ export function ReplyComposer({
             <div className="flex items-center space-x-2 text-sm">
               <span className="text-muted-foreground w-16">To:</span>
               <span className="text-foreground">
-                {originalEmail.sender.suimailNs}
+                {originalEmail.mail.sender.suimailNs}
               </span>
             </div>
             <div className="flex items-center space-x-2 text-sm">
@@ -288,19 +289,19 @@ export function ReplyComposer({
                   <div className="text-xs text-muted-foreground space-y-1 mb-3">
                     <div>
                       <span className="font-medium">From:</span>{' '}
-                      {originalEmail.sender.suimailNs}
+                      {originalEmail.mail.sender.suimailNs}
                     </div>
                     <div>
                       <span className="font-medium">Date:</span>{' '}
-                      {formatDate(originalEmail.createdAt)}
+                      {formatDate(originalEmail.mail.createdAt)}
                     </div>
                     <div>
                       <span className="font-medium">Subject:</span>{' '}
-                      {originalEmail.subject}
+                      {originalEmail.mail.subject}
                     </div>
                   </div>
                   <div className="text-sm text-foreground whitespace-pre-wrap border-l-2 border-border pl-3">
-                    {originalEmail.body}
+                    {/* {originalEmail.mail.body} */}
                   </div>
                 </div>
               )}

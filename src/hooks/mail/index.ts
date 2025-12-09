@@ -5,7 +5,7 @@ import type { IEmail } from '../../types/generic'
 export function useFetchInboxQuery() {
   return useQuery({
     queryKey: ['inbox-mails'],
-    queryFn: async (): Promise<{ data: IEmail[] }> => {
+    queryFn: async (): Promise<any> => {
       return await httpService.get('/mail/inbox/me')
     },
     staleTime: 1000 * 60 * 5,
@@ -16,8 +16,9 @@ export function useFetchInboxQuery() {
 export function useFetchMailBodyQuery(mailId: string) {
   return useQuery({
     queryKey: ['mail-body', mailId],
-    queryFn: async (): Promise<IEmail> => {
+    queryFn: async (): Promise<any> => {
       return await httpService.get(`/mail/${mailId}`)
+      //probably return a modified IEmail-like object containing a decrypted body
     },
     staleTime: 1000 * 60 * 5,
     gcTime: 1000 * 60 * 10,
