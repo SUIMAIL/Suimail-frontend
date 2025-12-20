@@ -46,7 +46,6 @@ export function FormSection({ handleSubmit, isProcessing }: FormSectionProps) {
   }, [isCheckingAvailability, availabilityData, nsName])
 
   const handleAddressChange = (value: string) => {
-    // Remove @suimailapp suffix if it exists to prevent double appending
     let cleanValue = value.replace(/@suimailapp$/g, '')
 
     // Prevent .sui in standard names (only allowed for verified users)
@@ -54,7 +53,6 @@ export function FormSection({ handleSubmit, isProcessing }: FormSectionProps) {
       cleanValue = cleanValue.replace(/\.sui/g, '')
     }
 
-    // Smart @ handling - auto-complete to @suimailapp when user types @
     if (cleanValue.endsWith('@') && !cleanValue.endsWith('@suimailapp')) {
       setNsName(cleanValue + 'suimailapp')
     } else {
@@ -63,7 +61,6 @@ export function FormSection({ handleSubmit, isProcessing }: FormSectionProps) {
   }
 
   const handleBlur = () => {
-    // Auto-append @suimailapp when user finishes typing (on blur)
     const cleanAddress = nsName.replace(/@suimailapp$/g, '')
     if (cleanAddress && !cleanAddress.includes('@')) {
       setNsName(cleanAddress + '@suimailapp')
@@ -100,7 +97,6 @@ export function FormSection({ handleSubmit, isProcessing }: FormSectionProps) {
                   onChange={e => handleAddressChange(e.target.value)}
                   onBlur={handleBlur}
                   onKeyDown={e => {
-                    // Prevent deleting @suimailapp
                     const cursorPos = e.currentTarget.selectionStart || 0
                     const domainStart = nsName.indexOf('@suimailapp')
                     if (
@@ -112,7 +108,6 @@ export function FormSection({ handleSubmit, isProcessing }: FormSectionProps) {
                     }
                   }}
                   onClick={e => {
-                    // Keep cursor before @suimailapp
                     const domainStart = nsName.indexOf('@suimailapp')
                     if (domainStart !== -1) {
                       e.currentTarget.setSelectionRange(

@@ -35,8 +35,6 @@ export default function OnboardingPage() {
   const { mutateAsync: setUserSuimailNs, isPending: isSettingUpSuimailNs } =
     useSetUserSuimailNsMutation()
 
-  // Use the dapp-kit hook to resolve SuiNS name
-  // Only call when we have a valid wallet address
   const {
     data: suinsName,
     isLoading: isLoadingSuins,
@@ -45,30 +43,25 @@ export default function OnboardingPage() {
     walletAddress && isValidSuiAddress(walletAddress) ? walletAddress : null
   )
 
-  // Set wallet address when connected
   useEffect(() => {
     if (connectionStatus === 'connected' && currentAccount?.address) {
       setWalletAddress(currentAccount.address)
     }
   }, [currentAccount, connectionStatus])
 
-  // Handle SuiNS resolution result
   useEffect(() => {
-    // Only log if we have a wallet address
     if (!walletAddress) return
 
     if (suinsName) {
       setEmailType('verified')
       setSelectedSuins(suinsName.replace('.sui', ''))
     } else if (!isLoadingSuins && walletAddress && !suinsError) {
-      // Only set to standard if we were checking
       if (emailType === 'verified') {
         setEmailType('standard')
       }
     }
   }, [suinsName, isLoadingSuins, walletAddress, suinsError])
 
-  // Log errors
   useEffect(() => {
     if (suinsError) {
       console.error('❌ Error resolving SuiNS:', suinsError)

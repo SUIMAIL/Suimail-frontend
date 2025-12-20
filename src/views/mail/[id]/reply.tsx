@@ -1,311 +1,572 @@
-import { useState, useEffect, useRef, useCallback } from 'react'
-import { X, Send, Loader2, ChevronDown } from 'lucide-react'
+import { useState, useEffect } from 'react'
+import { useNavigate, useLocation } from 'react-router-dom'
+import { ArrowLeft } from 'lucide-react'
+import { useQueryClient } from '@tanstack/react-query'
 import { Button } from '@/components/ui/button'
-import { Editor } from '@tinymce/tinymce-react'
-import type { Editor as TinyMCEEditor } from 'tinymce'
-import type { IEmail } from '@/types/generic'
+import { usePostSendMailMutation } from '@/hooks/mail'
+import { ReplyFormSection } from './ReplyFormSection'
+import { useToastContext } from '@/components/ui/toast'
+import { useCreateEscrowTx } from '../compose/utils/create-escrow-tx'
+import {
+  checkValidAttachmentSize,
+  checkValidTotalAttachmentsSize,
+  MAX_ATTACHMENT_SIZE,
+  MAX_ATTACHMENTS_TOTAL_SIZE,
+} from '../compose/helpers/checkers'
+import prettyBytes from 'pretty-bytes'
+import { AxiosError } from 'axios'
+import mixpanel from '@/utils/mixpanel'
+import { useSignAndExecuteTransaction, useSuiClient } from '@mysten/dapp-kit'
+import { Transaction } from '@mysten/sui/transactions'
+import { SealClient } from '@mysten/seal'
+import { fromHex, toHex } from '@mysten/sui/utils'
 
-interface ReplyComposerProps {
-  originalEmail: IEmail
-  onSend: (replyData: {
-    to: string
-    subject: string
-    body: string
-    inReplyTo?: string
-    originalMessageId?: string
-  }) => Promise<void>
-  onCancel: () => void
-  isVisible: boolean
-  isSending: boolean
+const PACKAGE_ID = import.meta.env.VITE_PACKAGE_ID
+const NUM_EPOCHS = 50
+
+const SERVER_OBJECT_IDS: string[] = JSON.parse(
+  import.meta.env.VITE_SERVER_OBJECT_IDS || '[]'
+)
+interface ReplyMailValues {
+  recipient: string
+  subject: string
+  message: string
+  attachments?: File[]
+  requiredFee: number
+  recipientAddress: string
 }
 
-export function ReplyComposer({
-  originalEmail,
-  onSend,
-  onCancel,
-  isVisible,
-  isSending,
-}: ReplyComposerProps) {
-  const [replyBody, setReplyBody] = useState('')
-  const [error, setError] = useState('')
-  const [showQuotedMessage, setShowQuotedMessage] = useState(false)
-  const [isDarkMode, setIsDarkMode] = useState(
-    document.documentElement.classList.contains('dark')
-  )
-  const [editorKey, setEditorKey] = useState(0)
-  const editorRef = useRef<TinyMCEEditor | null>(null)
+interface ParentMailData {
+  mailObjectId: string
+  sender: {
+    suimailNs: string
+    imageUrl?: string
+  }
+  subject: string
+  messagePreview: string
+}
 
-  // Watch for theme changes
+type WalrusService = {
+  id: string
+  name: string
+  publisherUrl: string
+  aggregatorUrl: string
+}
+
+const WALRUS_SERVICES: WalrusService[] = [
+  {
+    id: 'service1',
+    name: 'staketab',
+    publisherUrl: 'https://walrus.testnet.publisher.stakepool.dev.br',
+    aggregatorUrl:
+      'https://wal-aggregator-testnet.staketab.org/v1/blobs/${blobId}',
+  },
+  {
+    id: 'service2',
+    name: 'walrus space',
+    publisherUrl: '/publisher2',
+    aggregatorUrl: '/aggregator2',
+  },
+  {
+    id: 'service3',
+    name: 'redundex.com',
+    publisherUrl: '/publisher3',
+    aggregatorUrl: '/aggregator3',
+  },
+]
+
+export default function ReplyPage() {
+  const navigate = useNavigate()
+  const location = useLocation()
+  const queryClient = useQueryClient()
+  const { setNotification } = useToastContext()
+  const suiClient = useSuiClient()
+  const [selectedWalrusService, setSelectedWalrusService] = useState('service1')
+
+  // Get parent mail data from navigation state
+  const parentMail = location.state?.parentMail as ParentMailData | undefined
+
   useEffect(() => {
-    const observer = new MutationObserver(() => {
-      const isDark = document.documentElement.classList.contains('dark')
-      setIsDarkMode(isDark)
-      setEditorKey(prev => prev + 1)
-    })
-
-    observer.observe(document.documentElement, {
-      attributes: true,
-      attributeFilter: ['class'],
-    })
-
-    return () => observer.disconnect()
-  }, [])
-
-  // Focus effect
-  useEffect(() => {
-    if (isVisible && editorRef.current) {
-      editorRef.current.focus()
+    if (!parentMail) {
+      setNotification({
+        message: 'No parent mail found',
+        type: 'error',
+      })
+      navigate('/mail/inbox')
     }
-  }, [isVisible])
+  }, [parentMail, navigate, setNotification])
 
-  // Format date helper
-  const formatDate = (dateString: string) => {
-    const date = new Date(dateString)
-    return date.toLocaleDateString('en-US', {
-      year: 'numeric',
-      month: 'short',
-      day: 'numeric',
-      hour: '2-digit',
-      minute: '2-digit',
+  const { mutate: signAndExecute } = useSignAndExecuteTransaction({
+    execute: async ({ bytes, signature }) =>
+      await suiClient.executeTransactionBlock({
+        transactionBlock: bytes,
+        signature,
+        options: {
+          showRawEffects: true,
+          showEffects: true,
+        },
+      }),
+  })
+
+  const { createEscrowTx } = useCreateEscrowTx()
+  const { mutateAsync: sendMail, isPending: isSendingMail } =
+    usePostSendMailMutation()
+
+  const sealClient = new SealClient({
+    suiClient,
+    serverConfigs: SERVER_OBJECT_IDS.map((id: string) => ({
+      objectId: id,
+      weight: 1,
+    })),
+    verifyKeyServers: false,
+  })
+
+  const getPublisherUrl = (path: string): string => {
+    const service = WALRUS_SERVICES.find(s => s.id === selectedWalrusService)
+    const cleanPath = path.replace(/^\/+/, '').replace(/^v1\//, '')
+    return `${service?.publisherUrl}/v1/${cleanPath}`
+  }
+
+  const encryptAndUploadToWalrus = async (
+    data: Uint8Array,
+    policyObjectId: string
+  ): Promise<string> => {
+    try {
+      const nonce = crypto.getRandomValues(new Uint8Array(5))
+      const policyObjectBytes = fromHex(policyObjectId)
+      const id = toHex(new Uint8Array([...policyObjectBytes, ...nonce]))
+
+      const { encryptedObject: encryptedBytes } = await sealClient.encrypt({
+        threshold: 2,
+        packageId: PACKAGE_ID,
+        id,
+        data,
+      })
+
+      const response = await fetch(
+        `${getPublisherUrl(`/v1/blobs?epochs=${NUM_EPOCHS}`)}`,
+        {
+          method: 'PUT',
+          body: encryptedBytes,
+        }
+      )
+
+      if (response.status !== 200) {
+        throw new Error('Failed to upload to Walrus')
+      }
+
+      const result = await response.json()
+
+      let blobId: string
+      if ('alreadyCertified' in result) {
+        blobId = result.alreadyCertified.blobId
+      } else if ('newlyCreated' in result) {
+        blobId = result.newlyCreated.blobObject.blobId
+      } else {
+        throw new Error('Unexpected Walrus response format')
+      }
+
+      return blobId
+    } catch (error) {
+      console.error('Walrus upload error:', error)
+      throw error
+    }
+  }
+
+  const encryptMailContent = async (
+    subject: string,
+    message: string,
+    policyObjectId: string
+  ): Promise<string> => {
+    const mailContent = JSON.stringify({
+      subject,
+      message,
+      timestamp: new Date().toISOString(),
+    })
+
+    const encoder = new TextEncoder()
+    const dataBytes = encoder.encode(mailContent)
+
+    const blobId = await encryptAndUploadToWalrus(dataBytes, policyObjectId)
+
+    return blobId
+  }
+
+  type EncryptedAttachmentMeta = {
+    blobId: string
+    fileName: string
+    fileType: string
+  }
+
+  const encryptAttachments = async (
+    attachments: File[],
+    policyObjectId: string
+  ): Promise<EncryptedAttachmentMeta[]> => {
+    const results: EncryptedAttachmentMeta[] = []
+
+    for (const file of attachments) {
+      const arrayBuffer = await file.arrayBuffer()
+      const dataBytes = new Uint8Array(arrayBuffer)
+
+      const blobId = await encryptAndUploadToWalrus(dataBytes, policyObjectId)
+
+      results.push({
+        blobId,
+        fileName: file.name,
+        fileType: file.type || 'application/octet-stream',
+      })
+    }
+
+    return results
+  }
+
+  // Create mail on blockchain
+  const createMail = async (recipient: string): Promise<string | null> => {
+    return new Promise((resolve, reject) => {
+      const tx = new Transaction()
+
+      tx.moveCall({
+        target: `${PACKAGE_ID}::messages::compose_mail`,
+        arguments: [tx.pure.address(recipient), tx.object('0x6')],
+      })
+
+      tx.setGasBudget(10000000)
+
+      signAndExecute(
+        {
+          transaction: tx,
+        },
+        {
+          onSuccess: async result => {
+            let mailObject = result.effects?.created?.find(
+              item =>
+                item.owner &&
+                typeof item.owner === 'object' &&
+                'Shared' in item.owner
+            )
+
+            if (
+              !mailObject &&
+              result.effects?.created &&
+              result.effects.created.length > 0
+            ) {
+              mailObject = result.effects.created[0]
+            }
+
+            const mailObjectId = mailObject?.reference?.objectId
+
+            if (mailObjectId) {
+              tx.moveCall({
+                target: `${PACKAGE_ID}::messages::add_recipient`,
+                arguments: [tx.pure.string(recipient), tx.object(mailObjectId)],
+              })
+            }
+
+            resolve(mailObjectId || null)
+          },
+          onError: error => {
+            console.error('Failed to create mail on-chain:', error)
+            reject(error)
+          },
+        }
+      )
     })
   }
 
-  // Generate reply subject (avoid double Re:)
-  const replySubject = originalEmail.subject.startsWith('Re: ')
-    ? originalEmail.subject
-    : `Re: ${originalEmail.subject}`
-
-  const handleSend = useCallback(async () => {
-    const bodyText = editorRef.current?.getContent({ format: 'text' }) || ''
-    const bodyHtml = editorRef.current?.getContent() || ''
-
-    if (!bodyText.trim()) {
-      setError('Please enter a message')
+  const handleReply = async (data: ReplyMailValues) => {
+    if (!parentMail) {
+      setNotification({
+        message: 'No parent mail found',
+        type: 'error',
+      })
       return
     }
-    if (bodyText.trim().length > 10000) {
-      setError('Message is too long (maximum 10,000 characters)')
-      return
-    }
-    setError('')
 
     try {
-      await onSend({
-        to: originalEmail.sender.suimailNs || '',
-        subject: replySubject,
-        body: bodyHtml,
-        inReplyTo: originalEmail.id,
-        originalMessageId: originalEmail.id,
+      // Validate attachments
+      if (data.attachments && data.attachments.length > 0) {
+        if (checkValidAttachmentSize(data.attachments)) {
+          setNotification({
+            message: 'Invalid attachment size',
+            description: `Attachment must be around ${prettyBytes(
+              MAX_ATTACHMENT_SIZE,
+              {
+                maximumFractionDigits: 0,
+              }
+            )}`,
+            type: 'error',
+          })
+          mixpanel.track('Send Reply Failure', {
+            reason: 'Invalid attachment size',
+          })
+          return
+        }
+
+        if (!checkValidTotalAttachmentsSize(data.attachments)) {
+          setNotification({
+            message: `Total attachments size is too large. Max ${prettyBytes(
+              MAX_ATTACHMENTS_TOTAL_SIZE,
+              {
+                maximumFractionDigits: 0,
+              }
+            )}`,
+            type: 'error',
+          })
+          mixpanel.track('Send Reply Failure', {
+            reason: 'Total attachments size is too large',
+          })
+          return
+        }
+      }
+
+      setNotification({
+        message: 'Creating reply on blockchain...',
+        type: 'success',
       })
-      setReplyBody('')
-      editorRef.current?.setContent('')
-    } catch (err) {
-      const errorMessage =
-        err instanceof Error
-          ? err.message
-          : 'Failed to send reply. Please try again.'
-      setError(errorMessage)
-      console.error('Reply send error:', err)
-    }
-  }, [originalEmail, onSend, replySubject])
 
-  const handleCancel = useCallback(() => {
-    if (!isSending) {
-      setReplyBody('')
-      setError('')
-      editorRef.current?.setContent('')
-      onCancel()
-    }
-  }, [isSending, onCancel])
+      // Create mail on-chain
+      let mailObjectId: string | null
+      try {
+        mailObjectId = await createMail(data.recipientAddress)
 
-  // Keyboard shortcuts
-  useEffect(() => {
-    const handleKeyDown = (e: KeyboardEvent) => {
-      if (!isVisible) return
-
-      if (e.key === 'Escape' && !isSending) {
-        handleCancel()
+        if (!mailObjectId) {
+          throw new Error('Failed to get mail object ID from transaction')
+        }
+      } catch (error) {
+        console.error('Failed to create mail on-chain:', error)
+        setNotification({
+          message: 'Failed to create mail on blockchain',
+          type: 'error',
+        })
+        mixpanel.track('Send Reply Failure', {
+          reason: 'Failed to create mail on-chain',
+        })
+        return
       }
 
-      if (e.ctrlKey && e.key === 'Enter' && !isSending && replyBody.trim()) {
-        handleSend()
+      const policyObjectId = mailObjectId
+
+      // Encrypt mail content
+      setNotification({
+        message: 'Encrypting reply content...',
+        type: 'success',
+      })
+
+      let mailBlobId: string
+      try {
+        mailBlobId = await encryptMailContent(
+          data.subject,
+          data.message,
+          policyObjectId
+        )
+      } catch (error) {
+        console.error('Failed to encrypt mail content:', error)
+        setNotification({
+          message: 'Failed to encrypt mail content',
+          type: 'error',
+        })
+        mixpanel.track('Send Reply Failure', {
+          reason: 'Failed to encrypt mail content',
+        })
+        return
       }
+
+      // Encrypt attachments if any
+      let encryptedAttachments: EncryptedAttachmentMeta[] = []
+
+      if (data.attachments && data.attachments.length > 0) {
+        setNotification({
+          message: 'Encrypting attachments...',
+          type: 'success',
+        })
+
+        try {
+          encryptedAttachments = await encryptAttachments(
+            data.attachments,
+            policyObjectId
+          )
+        } catch (error) {
+          console.error('Failed to encrypt attachments:', error)
+          setNotification({
+            message: 'Failed to encrypt attachments',
+            type: 'error',
+          })
+          mixpanel.track('Send Reply Failure', {
+            reason: 'Failed to encrypt attachments',
+          })
+          return
+        }
+      }
+
+      // Create escrow transaction if fee required
+      let createEscrowTxDigest = ''
+      if (data.requiredFee > 0) {
+        setNotification({
+          message: 'Processing payment...',
+          type: 'success',
+        })
+
+        createEscrowTxDigest = await createEscrowTx(
+          data.requiredFee,
+          data.recipientAddress
+        )
+
+        if (createEscrowTxDigest === 'false') {
+          setNotification({
+            message: 'Failed to charge mail Transaction Fee',
+            type: 'error',
+          })
+          mixpanel.track('Send Reply Failure', {
+            reason: 'Failed to charge mail Transaction Fee',
+          })
+          return
+        }
+      }
+
+      // Prepare payload with reply metadata
+      const payload = {
+        recipient: data.recipient,
+        subject: data.subject,
+        mailBlobId,
+        mailObjectId,
+        parentMailId: parentMail.mailObjectId,
+        isReply: true,
+        attachments: encryptedAttachments,
+        escrowDigest:
+          createEscrowTxDigest.length > 0 && createEscrowTxDigest !== 'false'
+            ? createEscrowTxDigest
+            : undefined,
+      }
+
+      navigate('/mail/inbox')
+
+      setNotification({
+        message: 'Sending reply...',
+        type: 'success',
+      })
+
+      // Send the reply
+      sendMail(payload)
+        .then(async () => {
+          setNotification({
+            message: 'Reply sent successfully',
+            type: 'success',
+          })
+          mixpanel.track('Send Reply Success', {
+            has_attachments: encryptedAttachments.length > 0,
+            attachment_count: encryptedAttachments.length,
+            has_fee: data.requiredFee > 0,
+            on_chain: true,
+            encrypted: true,
+            walrus_storage: true,
+            is_reply: true,
+          })
+          await queryClient.invalidateQueries({
+            queryKey: ['outbox-mails', 'inbox-mails'],
+          })
+        })
+        .catch(error => {
+          if (error instanceof AxiosError) {
+            setNotification({
+              message: error.response?.data.message || 'Failed to send reply',
+              type: 'error',
+            })
+            mixpanel.track('Send Reply Failure', {
+              reason: error.response?.data.message,
+            })
+          } else {
+            setNotification({
+              message: 'Failed to send reply',
+              type: 'error',
+            })
+            mixpanel.track('Send Reply Failure', {
+              reason: 'Unknown error',
+            })
+          }
+        })
+    } catch (error) {
+      console.error('Error in handleReply:', error)
+      setNotification({
+        message: 'Failed to send reply',
+        type: 'error',
+      })
+      mixpanel.track('Send Reply Failure', {
+        reason: 'Failed to send reply',
+      })
     }
+  }
 
-    document.addEventListener('keydown', handleKeyDown)
-    return () => document.removeEventListener('keydown', handleKeyDown)
-  }, [isVisible, isSending, replyBody, handleCancel, handleSend])
-
-  if (!isVisible) return null
+  if (!parentMail) {
+    return null
+  }
 
   return (
-    <div className="absolute inset-0 surface-light border-l border-border elevation-3 z-30 flex flex-col">
+    <div className="flex flex-col min-h-screen surface-base">
       {/* Header */}
-      <div className="flex items-center justify-between p-4 border-b border-border surface-dark">
-        <div className="flex items-center space-x-3">
-          <Button
-            variant="ghost"
-            size="sm"
-            onClick={handleCancel}
-            disabled={isSending}
-            className="h-8 w-8 p-0 hover:bg-accent"
-          >
-            <X className="h-4 w-4" />
-          </Button>
-          <div>
-            <h3 className="font-semibold text-foreground">Reply</h3>
-            <p className="text-sm text-muted-foreground">
-              to {originalEmail.sender.suimailNs}
-            </p>
-          </div>
-        </div>
-
+      <div className="sticky top-0 z-10 flex items-center gap-3 border-b border-border surface-light elevation-1 px-4 py-3">
         <Button
-          onClick={handleSend}
-          disabled={isSending || !replyBody.trim()}
-          size="sm"
-          className="bg-blue-base hover:bg-blue-dark text-white touch-target"
+          variant="ghost"
+          size="icon"
+          onClick={() => navigate(-1)}
+          aria-label="Go back"
+          className="hover:bg-accent flex-shrink-0"
         >
-          {isSending ? (
-            <>
-              <Loader2 className="h-4 w-4 mr-2 animate-spin" />
-              Sending...
-            </>
-          ) : (
-            <>
-              <Send className="h-4 w-4 mr-2" />
-              Send
-            </>
-          )}
+          <ArrowLeft className="h-5 w-5 text-foreground" />
         </Button>
+        <h1 className="text-lg font-semibold text-foreground">Reply</h1>
       </div>
 
-      {/* Main Content */}
-      <div className="flex-1 flex flex-col overflow-hidden">
-        {/* Error Message */}
-        {error && (
-          <div className="mx-4 mt-4 p-3 bg-destructive/10 border border-destructive/20 rounded-md">
-            <p className="text-sm text-destructive">{error}</p>
-          </div>
-        )}
-
-        {/* Compose Area */}
-        <div className="flex-1 p-4 space-y-4 overflow-y-auto smooth-scroll">
-          {/* To and Subject Fields */}
-          <div className="space-y-3">
-            <div className="flex items-center space-x-2 text-sm">
-              <span className="text-muted-foreground w-16">To:</span>
-              <span className="text-foreground">
-                {originalEmail.sender.suimailNs}
-              </span>
-            </div>
-            <div className="flex items-center space-x-2 text-sm">
-              <span className="text-muted-foreground w-16">Subject:</span>
-              <span className="text-foreground">{replySubject}</span>
+      {/* Content */}
+      <div className="flex-1 overflow-y-auto">
+        <div className="max-w-3xl mx-auto px-4 sm:px-6 py-6 sm:py-8">
+          {/* Original Message Context */}
+          <div className="mb-6 p-4 border-l-4 border-accent bg-surface-light rounded-lg">
+            <div className="text-sm space-y-1">
+              <p className="text-muted-foreground">
+                <span className="font-medium">From:</span>{' '}
+                {parentMail.sender.suimailNs}
+              </p>
+              <p className="text-muted-foreground">
+                <span className="font-medium">Subject:</span>{' '}
+                {parentMail.subject}
+              </p>
+              <div className="mt-3 pt-3 border-t border-border">
+                <p className="text-xs text-muted-foreground line-clamp-3">
+                  {parentMail.messagePreview}
+                </p>
+              </div>
             </div>
           </div>
 
-          <div className="border-t border-border pt-4">
-            {/* Rich Text Editor */}
-            <div className="mb-4 rounded-lg overflow-hidden border border-border">
-              <Editor
-                key={editorKey}
-                onInit={(_evt, editor) => (editorRef.current = editor)}
-                apiKey={import.meta.env.VITE_TINYMCE_API_KEY}
-                init={{
-                  height: 300,
-                  menubar: false,
-                  plugins: [
-                    'autolink',
-                    'lists',
-                    'link',
-                    'charmap',
-                    'anchor',
-                    'searchreplace',
-                    'visualblocks',
-                    'code',
-                    'fullscreen',
-                    'insertdatetime',
-                    'media',
-                    'table',
-                    'preview',
-                    'help',
-                    'wordcount',
-                  ],
-                  toolbar:
-                    'undo redo | blocks | bold italic underline | alignleft aligncenter alignright alignjustify | bullist numlist outdent indent | removeformat | help',
-                  skin: isDarkMode ? 'oxide-dark' : 'oxide',
-                  content_css: isDarkMode ? 'dark' : 'default',
-                  content_style: `
-                    body {
-                      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Oxygen, Ubuntu, Cantarell, "Open Sans", "Helvetica Neue", sans-serif;
-                      font-size: 14px;
-                      color: ${isDarkMode ? '#e5e5e5' : '#1f2937'};
-                      background: ${isDarkMode ? '#1a1a1a' : '#ffffff'};
-                    }
-                    [data-mce-placeholder]:before {
-                      color: #ffffff !important;
-                    }
-                  `,
-                  branding: false,
-                  resize: false,
-                  statusbar: false,
-                  placeholder: 'Type your reply here...',
-                }}
-                onEditorChange={content => setReplyBody(content)}
-              />
-            </div>
-
-            {/* Keyboard Shortcuts Hint */}
-            <div className="text-xs text-muted-foreground mb-4">
-              Press{' '}
-              <kbd className="px-1.5 py-0.5 bg-muted rounded text-foreground font-mono text-xs">
-                Ctrl+Enter
-              </kbd>{' '}
-              to send •{' '}
-              <kbd className="px-1.5 py-0.5 bg-muted rounded text-foreground font-mono text-xs">
-                Esc
-              </kbd>{' '}
-              to cancel
-            </div>
-
-            {/* Quoted Message Toggle */}
-            <div className="border-t border-border pt-4">
-              <Button
-                variant="ghost"
-                size="sm"
-                onClick={() => setShowQuotedMessage(!showQuotedMessage)}
-                className="text-muted-foreground hover:text-foreground p-0 h-auto font-normal"
-              >
-                <ChevronDown
-                  className={`h-4 w-4 mr-2 transition-transform ${showQuotedMessage ? 'rotate-180' : ''}`}
-                />
-                {showQuotedMessage ? 'Hide' : 'Show'} quoted message
-              </Button>
-
-              {showQuotedMessage && (
-                <div className="mt-3 p-4 surface-dark rounded-lg border border-border elevation-1">
-                  <div className="text-xs text-muted-foreground space-y-1 mb-3">
-                    <div>
-                      <span className="font-medium">From:</span>{' '}
-                      {originalEmail.sender.suimailNs}
-                    </div>
-                    <div>
-                      <span className="font-medium">Date:</span>{' '}
-                      {formatDate(originalEmail.createdAt)}
-                    </div>
-                    <div>
-                      <span className="font-medium">Subject:</span>{' '}
-                      {originalEmail.subject}
-                    </div>
-                  </div>
-                  <div className="text-sm text-foreground whitespace-pre-wrap border-l-2 border-border pl-3">
-                    {originalEmail.body}
-                  </div>
-                </div>
-              )}
-            </div>
+          {/* Walrus Service Selector */}
+          <div className="mb-4 p-4 bg-surface-light rounded-lg border border-border">
+            <label className="block text-sm font-medium text-foreground mb-2">
+              Walrus Storage Service
+            </label>
+            <select
+              value={selectedWalrusService}
+              onChange={e => setSelectedWalrusService(e.target.value)}
+              className="w-full px-3 py-2 border border-border rounded-md bg-surface-base text-foreground"
+            >
+              {WALRUS_SERVICES.map(service => (
+                <option key={service.id} value={service.id}>
+                  {service.name}
+                </option>
+              ))}
+            </select>
+            <p className="mt-2 text-xs text-muted-foreground">
+              Your reply content and attachments will be encrypted and stored on
+              Walrus decentralized storage
+            </p>
           </div>
+
+          {/* Reply Form */}
+          <ReplyFormSection
+            onSubmit={handleReply}
+            isLoading={isSendingMail}
+            parentSubject={parentMail.subject}
+            recipientEmail={parentMail.sender.suimailNs}
+          />
         </div>
       </div>
     </div>

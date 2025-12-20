@@ -15,11 +15,9 @@ const MailBoardLayout = () => {
 
   const isMobile = useMediaQuery('(max-width: 768px)')
 
-  // Hide buttons only on specific pages where they would interfere
   const isComposePage = useMemo(() => pathname === '/mail/compose', [pathname])
   const isHelpPage = useMemo(() => pathname === '/account/help', [pathname])
 
-  // Show buttons on all pages EXCEPT compose and help pages
   const showButtons = useMemo(
     () => !isComposePage && !isHelpPage,
     [isComposePage, isHelpPage]

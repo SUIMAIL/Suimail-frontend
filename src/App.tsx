@@ -15,17 +15,17 @@ import { queryClient } from './query-client'
 import { suimailClientConfig } from './utils/config/clientConfig'
 import AppProvider from './utils/contexts/AppContext/AppContextProvider'
 import { ToastProvider } from './components/ui/toast'
+import { SessionKeyProvider } from './utils/contexts/AppContext/SessionKeyContext'
 
-// Config options for the networks you want to connect to
 const { networkConfig } = createNetworkConfig({
   testnet: { url: getFullnodeUrl('testnet') },
   mainnet: { url: getFullnodeUrl('mainnet') },
 })
-
+const PACKAGE_ID = import.meta.env.VITE_PACKAGE_ID
 export default function App() {
   return (
-    <AppProvider>
-      <QueryClientProvider client={queryClient}>
+    <QueryClientProvider client={queryClient}>
+      <AppProvider>
         <SuiClientProvider networks={networkConfig} defaultNetwork="testnet">
           <RegisterEnokiWallets />
           <WalletProvider
@@ -35,12 +35,14 @@ export default function App() {
             }}
           >
             <ToastProvider>
-              <RouterProvider router={routes} />
+              <SessionKeyProvider packageId={PACKAGE_ID}>
+                <RouterProvider router={routes} />
+              </SessionKeyProvider>
             </ToastProvider>
           </WalletProvider>
         </SuiClientProvider>
-      </QueryClientProvider>
-    </AppProvider>
+      </AppProvider>
+    </QueryClientProvider>
   )
 }
 

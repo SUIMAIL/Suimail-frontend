@@ -23,10 +23,8 @@ export function ConfirmSuimailNSModal({
   suimailNs,
   handleOnConfirmSubmit,
 }: ConfirmSuimailNSModalProps) {
-  // Check if verified by looking for .sui in the address
   const isVerified = suimailNs.includes('.sui')
 
-  // Ensure the full email address has @suimailapp
   const fullEmailAddress = suimailNs.includes('@suimailapp')
     ? suimailNs
     : `${suimailNs}@suimailapp`

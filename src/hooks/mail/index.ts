@@ -2,22 +2,21 @@ import { useMutation, useQuery } from '@tanstack/react-query'
 import { httpService } from '../../api'
 import type { IEmail } from '../../types/generic'
 
-export function useFetchInboxQuery() {
+export function useFetchMailBodyQuery(mailId: string) {
   return useQuery({
-    queryKey: ['inbox-mails'],
-    queryFn: async (): Promise<{ data: IEmail[] }> => {
-      return await httpService.get('/mail/inbox/me')
+    queryKey: ['mail-body', mailId],
+    queryFn: async (): Promise<any> => {
+      return await httpService.get(`/mail/${mailId}`)
     },
     staleTime: 1000 * 60 * 5,
     gcTime: 1000 * 60 * 10,
   })
 }
-
-export function useFetchMailBodyQuery(mailId: string) {
+export function useFetchInboxQuery() {
   return useQuery({
-    queryKey: ['mail-body', mailId],
-    queryFn: async (): Promise<IEmail> => {
-      return await httpService.get(`/mail/${mailId}`)
+    queryKey: ['inbox-mails'],
+    queryFn: async (): Promise<{ inbox: IEmail[] }> => {
+      return await httpService.get('/mail/inbox/me')
     },
     staleTime: 1000 * 60 * 5,
     gcTime: 1000 * 60 * 10,
@@ -45,7 +44,7 @@ export function useFetchMailBodyQuery(mailId: string) {
 export function useFetchOutboxQuery() {
   return useQuery({
     queryKey: ['outbox-mails'],
-    queryFn: async (): Promise<{ data: IEmail[] }> => {
+    queryFn: async (): Promise<{ outbox: IEmail[] }> => {
       return await httpService.get('/mail/outbox/me')
     },
     staleTime: 1000 * 60 * 5,
@@ -78,14 +77,21 @@ export function usePostDraftMailMutation() {
     },
   })
 }
+interface Attachment {
+  blobId: string
+  fileName: string
+  fileType: string
+}
 
 interface SendMailPayload {
   recipient: string
   subject: string
   mailBlobId: string
   mailObjectId: string
-  attachmentBlobIds: string[]
+  attachments?: Attachment[]
   escrowDigest?: string
+  parentMailId?: string
+  isReply?: boolean
 }
 
 export function usePostSendMailMutation() {
@@ -100,73 +106,54 @@ export function usePostSendMailMutation() {
   })
 }
 
-// New interface for reply data
-interface IPostReplyMail {
-  to: string
-  subject: string
-  body: string
-  inReplyTo?: string
-  originalMessageId?: string
-  walletAddress?: string
-}
+// export function usePostSendReplyMutation() {
+//   return useMutation({
+//     mutationFn: async (replyData: IPostReplyMail) => {
+//       if (!replyData.to || !replyData.subject || !replyData.body) {
+//         throw new Error('Missing required fields')
+//       }
 
-// New mutation specifically for replies with validation
-export function usePostSendReplyMutation() {
-  return useMutation({
-    mutationFn: async (replyData: IPostReplyMail) => {
-      // Frontend validation with proper error handling
-      if (!replyData.to || !replyData.subject || !replyData.body) {
-        throw new Error('Missing required fields')
-      }
+//       if (
+//         !replyData.to ||
+//         replyData.to.length < 1 ||
+//         replyData.to.length > 100
+//       ) {
+//         throw new Error('Invalid recipient format')
+//       }
 
-      // Validate recipient format for suimailNs (more permissive)
-      if (
-        !replyData.to ||
-        replyData.to.length < 1 ||
-        replyData.to.length > 100
-      ) {
-        throw new Error('Invalid recipient format')
-      }
+//       const sanitizedTo = replyData.to.replace(/[<>;"']/g, '').trim()
+//       if (sanitizedTo !== replyData.to.trim()) {
+//         throw new Error('Invalid characters in recipient')
+//       }
 
-      // Basic sanitization - remove potentially harmful characters
-      const sanitizedTo = replyData.to.replace(/[<>;"']/g, '').trim()
-      if (sanitizedTo !== replyData.to.trim()) {
-        throw new Error('Invalid characters in recipient')
-      }
+//       if (replyData.subject.length > 255) {
+//         throw new Error('Subject is too long (maximum 255 characters)')
+//       }
 
-      // Validate subject length
-      if (replyData.subject.length > 255) {
-        throw new Error('Subject is too long (maximum 255 characters)')
-      }
+//       if (replyData.body.length > 50000) {
+//         throw new Error('Message is too long (maximum 50,000 characters)')
+//       }
+//       const formData = new FormData()
+//       formData.append('from', replyData.walletAddress || '')
+//       formData.append('to', sanitizedTo)
+//       formData.append('subject', replyData.subject.trim())
+//       formData.append('message', replyData.body.trim())
 
-      // Validate body length
-      if (replyData.body.length > 50000) {
-        throw new Error('Message is too long (maximum 50,000 characters)')
-      }
+//       if (replyData.inReplyTo) {
+//         formData.append('inReplyTo', replyData.inReplyTo)
+//       }
+//       if (replyData.originalMessageId) {
+//         formData.append('references', replyData.originalMessageId)
+//       }
 
-      // Create FormData for the reply
-      const formData = new FormData()
-      formData.append('from', replyData.walletAddress || '')
-      formData.append('to', sanitizedTo)
-      formData.append('subject', replyData.subject.trim())
-      formData.append('message', replyData.body.trim())
-
-      // Add threading headers if provided
-      if (replyData.inReplyTo) {
-        formData.append('inReplyTo', replyData.inReplyTo)
-      }
-      if (replyData.originalMessageId) {
-        formData.append('references', replyData.originalMessageId)
-      }
-
-      return await httpService.post('/mail/send', formData, {
-        headers: {
-          'Content-Type': 'multipart/form-data',
-        },
-      })
-    },
-  })
-}
+//       return await httpService.post('/mail/send', formData, {
+//         headers: {
+//           'Content-Type': 'multipart/form-data',
+//         },
+//       })
+//     },
+//   })
+// }
 
 export function usePostMarkMailsAsReadMutation() {
   return useMutation({

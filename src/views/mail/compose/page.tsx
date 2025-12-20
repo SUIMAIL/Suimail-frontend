@@ -24,12 +24,11 @@ import { fromHex, toHex } from '@mysten/sui/utils'
 // import { string } from 'zod'
 
 const PACKAGE_ID = import.meta.env.VITE_PACKAGE_ID
-const NUM_EPOCHS = 1
+const NUM_EPOCHS = 50
 
-const SERVER_OBJECT_IDS = [
-  '0x73d05d62c18d9374e3ea529e8e0ed6161da1a141a94d3f76ae3fe4e99356db75',
-  '0xf5d14a81a982144ae441cd7d64b09027f116a468bd36e7eca494f750591623c8',
-]
+const SERVER_OBJECT_IDS: string[] = JSON.parse(
+  import.meta.env.VITE_SERVER_OBJECT_IDS || '[]'
+)
 
 interface ComposeMailValues {
   recipient: string
@@ -94,7 +93,7 @@ export default function ComposePage() {
 
   const sealClient = new SealClient({
     suiClient,
-    serverConfigs: SERVER_OBJECT_IDS.map(id => ({
+    serverConfigs: SERVER_OBJECT_IDS.map((id: string) => ({
       objectId: id,
       weight: 1,
     })),
@@ -116,16 +115,12 @@ export default function ComposePage() {
       const policyObjectBytes = fromHex(policyObjectId)
       const id = toHex(new Uint8Array([...policyObjectBytes, ...nonce]))
 
-      console.log('Encrypting data with ID:', id)
-
       const { encryptedObject: encryptedBytes } = await sealClient.encrypt({
         threshold: 2,
         packageId: PACKAGE_ID,
         id,
         data,
       })
-
-      console.log('Data encrypted, uploading to Walrus...')
 
       const response = await fetch(
         `${getPublisherUrl(`/v1/blobs?epochs=${NUM_EPOCHS}`)}`,
@@ -140,7 +135,6 @@ export default function ComposePage() {
       }
 
       const result = await response.json()
-      console.log('Walrus upload result:', result)
 
       let blobId: string
       if ('alreadyCertified' in result) {
@@ -151,7 +145,6 @@ export default function ComposePage() {
         throw new Error('Unexpected Walrus response format')
       }
 
-      console.log('Blob ID:', blobId)
       return blobId
     } catch (error) {
       console.error('Walrus upload error:', error)
@@ -173,33 +166,53 @@ export default function ComposePage() {
     const encoder = new TextEncoder()
     const dataBytes = encoder.encode(mailContent)
 
-    console.log('Encrypting mail content...')
     const blobId = await encryptAndUploadToWalrus(dataBytes, policyObjectId)
-    console.log('Mail content encrypted and uploaded, Blob ID:', blobId)
 
     return blobId
+  }
+
+  type EncryptedAttachmentMeta = {
+    blobId: string
+    fileName: string
+    fileType: string
   }
 
   const encryptAttachments = async (
     attachments: File[],
     policyObjectId: string
-  ): Promise<string[]> => {
-    const blobIds: string[] = []
+  ): Promise<EncryptedAttachmentMeta[]> => {
+    const results: EncryptedAttachmentMeta[] = []
 
     for (const file of attachments) {
-      console.log(`Encrypting attachment: ${file.name}`)
-
       const arrayBuffer = await file.arrayBuffer()
       const dataBytes = new Uint8Array(arrayBuffer)
 
       const blobId = await encryptAndUploadToWalrus(dataBytes, policyObjectId)
-      blobIds.push(blobId)
 
-      console.log(`Attachment ${file.name} encrypted, Blob ID: ${blobId}`)
+      results.push({
+        blobId,
+        fileName: file.name,
+        fileType: file.type || 'application/octet-stream',
+      })
     }
 
-    return blobIds
+    return results
   }
+
+  // for (const file of attachments) {
+  //   console.log(`Encrypting attachment: ${file.name}`)
+
+  //     const arrayBuffer = await file.arrayBuffer()
+  //     const dataBytes = new Uint8Array(arrayBuffer)
+
+  //     const blobId = await encryptAndUploadToWalrus(dataBytes, policyObjectId)
+  //     blobIds.push(blobId)
+
+  //     console.log(`Attachment ${file.name} encrypted, Blob ID: ${blobId}`)
+  //   }
+
+  //   return blobIds
+  // }
 
   const createMail = async (
     recipient: string
@@ -222,10 +235,6 @@ export default function ComposePage() {
         },
         {
           onSuccess: async result => {
-            console.log('Mail created on-chain successfully:', result)
-            console.log('Transaction effects:', result.effects)
-            console.log('Created objects:', result.effects?.created)
-
             let mailObject = result.effects?.created?.find(
               item =>
                 item.owner &&
@@ -238,24 +247,16 @@ export default function ComposePage() {
               result.effects?.created &&
               result.effects.created.length > 0
             ) {
-              console.log('No shared object found, using first created object')
               mailObject = result.effects.created[0]
             }
 
             const mailObjectId = mailObject?.reference?.objectId
 
-            console.log('Mail object found:', mailObject)
-            console.log('Object ownership:', mailObject?.owner)
-
             if (mailObjectId) {
-              console.log('Mail object ID (Policy Object ID):', mailObjectId)
               tx.moveCall({
                 target: `${PACKAGE_ID}::messages::add_recipient`,
                 arguments: [tx.pure.string(recipient), tx.object(mailObjectId)],
               })
-              console.log('Added recipient to mail object on-chain')
-            } else {
-              console.error('No object ID found in transaction result')
             }
 
             resolve(mailObjectId || null)
@@ -271,12 +272,6 @@ export default function ComposePage() {
 
   const handleSend = async (data: ComposeMailValues) => {
     try {
-      console.log('=== Starting Mail Send Process ===')
-      console.log('Recipient:', data.recipient)
-      console.log('Recipient Address:', data.recipientAddress)
-      console.log('Subject:', data.subject)
-      console.log('Has attachments:', !!data.attachments?.length)
-
       if (data.attachments) {
         if (checkValidAttachmentSize(data.attachments)) {
           setNotification({
@@ -324,8 +319,6 @@ export default function ComposePage() {
         if (!mailObjectId) {
           throw new Error('Failed to get mail object ID from transaction')
         }
-
-        console.log('Using mail object ID as policy object ID:', mailObjectId)
       } catch (error) {
         console.error('Failed to create mail on-chain:', error)
         setNotification({
@@ -364,7 +357,12 @@ export default function ComposePage() {
         return
       }
 
-      let attachmentBlobIds: string[] = []
+      let encryptedAttachments: {
+        blobId: string
+        fileName: string
+        fileType: string
+      }[] = []
+
       if (data.attachments && data.attachments.length > 0) {
         setNotification({
           message: 'Encrypting attachments...',
@@ -372,7 +370,7 @@ export default function ComposePage() {
         })
 
         try {
-          attachmentBlobIds = await encryptAttachments(
+          encryptedAttachments = await encryptAttachments(
             data.attachments,
             policyObjectId
           )
@@ -425,11 +423,9 @@ export default function ComposePage() {
       const payload = {
         recipient: data.recipient,
         subject: data.subject,
-        mailBlobId: mailBlobId,
-        mailObjectId: mailObjectId,
-        // Send the array directly, no need to JSON.stringify for JSON payloads
-        attachmentBlobIds:
-          attachmentBlobIds.length > 0 ? attachmentBlobIds : [],
+        mailBlobId,
+        mailObjectId,
+        attachments: encryptedAttachments,
         escrowDigest:
           createEscrowTxDigest.length > 0 && createEscrowTxDigest !== 'false'
             ? createEscrowTxDigest
@@ -450,8 +446,8 @@ export default function ComposePage() {
             type: 'success',
           })
           mixpanel.track('Send Mail Success', {
-            has_attachments: attachmentBlobIds.length > 0,
-            attachment_count: attachmentBlobIds.length,
+            has_attachments: encryptedAttachments.length > 0,
+            attachment_count: encryptedAttachments.length,
             has_fee: data.requiredFee > 0,
             on_chain: true,
             encrypted: true,

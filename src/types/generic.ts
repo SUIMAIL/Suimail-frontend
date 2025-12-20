@@ -11,14 +11,19 @@ export interface IUser {
 }
 
 export interface IEmailAttachment {
+  blobId: string
   fileName: string
   fileType: IAttachmentType
-  content: string
 }
+
 export interface IEmail {
   id: string
   subject: string
-  body: string
+  senderId: string
+  recipientId: string
+  MailBlobId: string
+  // attachments: string[]
+  MailobjectId: string
   sender: Pick<IUser, 'suimailNs' | 'imageUrl'>
   recipient: Pick<IUser, 'suimailNs' | 'imageUrl'>
   readAt?: string

@@ -14,17 +14,15 @@ export const FeedbackButton = () => {
   const buttonRef = useRef<HTMLDivElement>(null)
   const dragOffset = useRef({ x: 0, y: 0 })
 
-  // Set initial position to right-center on mount
   useEffect(() => {
     const setInitialPosition = () => {
-      const centerY = window.innerHeight / 2 - 32 // Subtract half button height
-      const rightX = window.innerWidth - 80 // 16px margin + 64px button width
-      setPosition({ x: rightX, y: centerY }) // Right center
+      const centerY = window.innerHeight / 2 - 32
+      const rightX = window.innerWidth - 80
+      setPosition({ x: rightX, y: centerY })
     }
 
     setInitialPosition()
 
-    // Recalculate center position on window resize
     const handleResize = () => {
       const centerY = window.innerHeight / 2 - 32
       const rightX = window.innerWidth - 80
@@ -35,7 +33,6 @@ export const FeedbackButton = () => {
     return () => window.removeEventListener('resize', handleResize)
   }, [])
 
-  // Check screen size on mount and resize
   useEffect(() => {
     const checkScreenSize = () => {
       setIsMobile(window.innerWidth < 768)
@@ -47,24 +44,21 @@ export const FeedbackButton = () => {
     return () => window.removeEventListener('resize', checkScreenSize)
   }, [])
 
-  // Show attention animation after component mounts
   useEffect(() => {
     if (!hasShownAttention) {
       const timer = setTimeout(() => {
         setShowAttention(true)
         setHasShownAttention(true)
 
-        // Hide attention after 4 seconds
         setTimeout(() => {
           setShowAttention(false)
-        }, 4000)
-      }, 2000) // Show after 2 seconds of page load
+        }, 7000)
+      }, 2000)
 
       return () => clearTimeout(timer)
     }
   }, [hasShownAttention])
 
-  // Prevent body scroll when modal is open
   useEffect(() => {
     if (isOpen) {
       document.body.style.overflow = 'hidden'
@@ -77,7 +71,6 @@ export const FeedbackButton = () => {
     }
   }, [isOpen])
 
-  // Handle ESC key to close modal
   useEffect(() => {
     const handleEsc = (e: KeyboardEvent) => {
       if (e.key === 'Escape' && isOpen) {
@@ -89,19 +82,17 @@ export const FeedbackButton = () => {
     return () => document.removeEventListener('keydown', handleEsc)
   }, [isOpen])
 
-  // Drag functionality - wrapped in useCallback
   const handleMouseMove = useCallback(
     (e: MouseEvent) => {
       if (!isDragging || isOpen) return
 
       const viewportWidth = window.innerWidth
       const viewportHeight = window.innerHeight
-      const buttonSize = isMobile ? 56 : 64 // Approximate button size
+      const buttonSize = isMobile ? 56 : 64
 
       let newX = e.clientX - dragOffset.current.x
       let newY = e.clientY - dragOffset.current.y
 
-      // Keep button within viewport bounds
       newX = Math.max(16, Math.min(newX, viewportWidth - buttonSize - 16))
       newY = Math.max(16, Math.min(newY, viewportHeight - buttonSize - 16))
 
@@ -122,7 +113,6 @@ export const FeedbackButton = () => {
       let newX = touch.clientX - dragOffset.current.x
       let newY = touch.clientY - dragOffset.current.y
 
-      // Keep button within viewport bounds
       newX = Math.max(16, Math.min(newX, viewportWidth - buttonSize - 16))
       newY = Math.max(16, Math.min(newY, viewportHeight - buttonSize - 16))
 
@@ -165,7 +155,6 @@ export const FeedbackButton = () => {
     e.preventDefault()
   }
 
-  // Add global event listeners for drag
   useEffect(() => {
     if (isDragging) {
       document.addEventListener('mousemove', handleMouseMove)
@@ -199,7 +188,7 @@ export const FeedbackButton = () => {
   const handleButtonClick = () => {
     if (!isDragging) {
       setIsOpen(true)
-      setShowAttention(false) // Hide attention when clicked
+      setShowAttention(false)
     }
   }
 

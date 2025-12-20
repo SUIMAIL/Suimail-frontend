@@ -22,7 +22,6 @@ interface EmailListProps {
 }
 
 export function EmailList({ mails, refetch }: EmailListProps) {
-  // Add defensive check for mails prop
   const safeMails = useMemo(() => {
     if (!mails || !Array.isArray(mails)) {
       return []

@@ -7,7 +7,6 @@ interface ProfileProps {
   name: string
   email: string
 }
-// Component to display user profile information in the sidebar
 
 export function Profile({ name, email }: ProfileProps) {
   const { data: profileImageData, isPending: isLoadingProfileImage } =

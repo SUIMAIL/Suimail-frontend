@@ -1,8 +1,6 @@
-/* eslint-disable @typescript-eslint/no-explicit-any */
 import { Transaction } from '@mysten/sui/transactions'
 import { useSignAndExecuteTransaction } from '@mysten/dapp-kit'
 
-//This hook creates an escrow transaction for a specified recipient and required fee.
 export const useClaimEscrowTx = () => {
   const { mutate: signAndExecuteTransaction } = useSignAndExecuteTransaction()
 

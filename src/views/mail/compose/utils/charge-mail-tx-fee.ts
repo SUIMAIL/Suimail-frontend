@@ -14,10 +14,8 @@ export const useChargeMailTxFee = () => {
     try {
       const tx = new Transaction()
 
-      // Split 0.01 SUI from the gas coin
       const [coin] = tx.splitCoins(tx.gas, [tx.pure.u64(SUI_AMOUNT)])
 
-      // Transfer the split coin to the recipient
       tx.transferObjects([coin], tx.pure.address(recipient))
 
       // Sign and execute the transaction block

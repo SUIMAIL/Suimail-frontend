@@ -24,7 +24,7 @@ interface FormFieldProps {
   useRichEditor?: boolean
   disabled?: boolean
   readonly?: boolean
-  className?: string // Add this line
+  className?: string
 }
 
 export const FormField = ({
@@ -43,7 +43,7 @@ export const FormField = ({
   useRichEditor = false,
   disabled,
   readonly,
-  className, // Add this line
+  className,
 }: FormFieldProps) => {
   const commonProps = {
     placeholder,

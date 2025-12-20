@@ -3,7 +3,6 @@ import { MIST_PER_SUI } from '@/constants'
 import { Transaction } from '@mysten/sui/transactions'
 import { useSignAndExecuteTransaction } from '@mysten/dapp-kit'
 
-//This hook creates an escrow transaction for a specified recipient and required fee.
 export const useCreateEscrowTx = () => {
   const { mutate: signAndExecuteTransaction } = useSignAndExecuteTransaction()
 
@@ -16,10 +15,8 @@ export const useCreateEscrowTx = () => {
     try {
       const tx = new Transaction()
 
-      // Split 0.01 SUI from the gas coin
       const [coin] = tx.splitCoins(tx.gas, [tx.pure.u64(SUI_AMOUNT)])
 
-      // Transfer the split coin to the recipient
       tx.moveCall({
         target:
           '0x285fb6adc9f70f7b014557948b59c6f790a8876540a793df7cbb00778e2ddbba::escrow::create_escrow',

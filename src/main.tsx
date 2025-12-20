@@ -3,7 +3,6 @@ import { createRoot } from 'react-dom/client'
 import './index.css'
 import App from './App.tsx'
 
-// Apply theme from localStorage before React renders
 try {
   const theme = localStorage.getItem('suimail-theme') || 'system'
   const root = document.documentElement

@@ -12,7 +12,7 @@ export default function SentPage() {
   const { data: outbox, isFetching, isError, refetch } = useFetchOutboxQuery()
 
   const mails = useMemo(() => {
-    return outbox?.data || []
+    return outbox?.outbox || []
   }, [outbox])
 
   return (

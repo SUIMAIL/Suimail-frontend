@@ -24,11 +24,9 @@ export const ComposeEditor = ({
   const [key, setKey] = useState(0)
 
   useEffect(() => {
-    // Watch for theme changes
     const observer = new MutationObserver(() => {
       const isDark = document.documentElement.classList.contains('dark')
       setIsDarkMode(isDark)
-      // Force re-render editor when theme changes
       setKey(prev => prev + 1)
     })
 
@@ -65,11 +63,9 @@ export const ComposeEditor = ({
           toolbar:
             'undo redo | blocks fontsize | bold italic underline | link table | align | checklist numlist bullist | emoticons charmap | removeformat',
 
-          // Dark mode support
           skin: isDarkMode ? 'oxide-dark' : 'oxide',
           content_css: isDarkMode ? 'dark' : 'default',
 
-          // Custom styling following your design system
           content_style: `
             body {
               background-color: ${isDarkMode ? 'oklch(0.15 0.01 250)' : 'oklch(0.99 0 0)'};

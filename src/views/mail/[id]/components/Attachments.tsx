@@ -18,7 +18,7 @@ export const ImageAttachment: React.FC<AttachmentProps> = ({ attachment }) => {
   ) {
     return (
       <img
-        src={`data:${attachment.fileType};base64,${attachment.content}`}
+        src={`data:${attachment.fileType};base64`}
         alt={attachment.fileName}
         className="h-[70px] w-[130px] object-cover rounded-md shadow"
       />
@@ -44,7 +44,7 @@ export const VideoAttachment: React.FC<AttachmentProps> = ({ attachment }) => {
   ) {
     return (
       <video
-        src={`data:${attachment.fileType};base64,${attachment.content}`}
+        src={`data:${attachment.fileType};base64,`}
         className="h-auto max-w-[200px]"
         controls
       />

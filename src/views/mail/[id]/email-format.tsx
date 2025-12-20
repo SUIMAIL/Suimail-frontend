@@ -1,19 +1,26 @@
 import parse from 'html-react-parser'
 import { ExternalLink } from 'lucide-react'
 
-// Enhanced email body formatter component that handles both HTML and plain text
 export const EmailBodyFormatter = ({
   body,
   isQuoted = false,
 }: {
-  body: string
+  body?: string
   isQuoted?: boolean
 }) => {
-  // Check if the content is HTML (contains HTML tags)
+  if (!body) {
+    return (
+      <div
+        className={`text-sm ${isQuoted ? 'text-muted-foreground' : 'text-foreground'}`}
+      >
+        <p className="italic text-muted-foreground">[No message content]</p>
+      </div>
+    )
+  }
+
   const isHtmlContent = /<[a-z][\s\S]*>/i.test(body)
 
   if (isHtmlContent) {
-    // Use html-react-parser to safely render HTML content
     return (
       <div
         className={`max-w-none prose prose-sm ${
@@ -29,13 +36,10 @@ export const EmailBodyFormatter = ({
     )
   }
 
-  // Original plain text formatting logic for backward compatibility
   const formatEmailBody = (text: string) => {
-    // Split by paragraphs first
     const paragraphs = text.split('\n\n').filter(p => p.trim())
 
     return paragraphs.map((paragraph, pIndex) => {
-      // Handle each line within the paragraph
       const lines = paragraph.split('\n')
 
       return (
@@ -46,7 +50,6 @@ export const EmailBodyFormatter = ({
           }`}
         >
           {lines.map((line, lIndex) => {
-            // Check if line is a quote (starts with >)
             if (line.trim().startsWith('>')) {
               return (
                 <div
@@ -60,7 +63,6 @@ export const EmailBodyFormatter = ({
               )
             }
 
-            // Check if line is a header (email signature style)
             if (line.match(/^(From|To|Subject|Date|Sent):\s/i)) {
               return (
                 <div
@@ -72,7 +74,6 @@ export const EmailBodyFormatter = ({
               )
             }
 
-            // Regular paragraph line
             return (
               <div
                 key={lIndex}
@@ -88,7 +89,6 @@ export const EmailBodyFormatter = ({
   }
 
   const formatTextWithLinks = (text: string) => {
-    // Enhanced URL regex to catch more patterns
     const urlRegex =
       /(https?:\/\/[^\s<>"{}|\\^`[\]]+[^\s<>"{}|\\^`[\].,;:])|(\b[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}\b)/g
 
@@ -97,7 +97,6 @@ export const EmailBodyFormatter = ({
     return parts.map((part, index) => {
       if (!part) return null
 
-      // Check if it's a URL
       if (part.match(/^https?:\/\//)) {
         return (
           <a
@@ -113,7 +112,6 @@ export const EmailBodyFormatter = ({
         )
       }
 
-      // Check if it's an email
       if (part.match(/^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}$/)) {
         return (
           <a

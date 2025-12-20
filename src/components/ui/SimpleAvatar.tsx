@@ -27,7 +27,6 @@ export function SimpleAvatar({
       .substring(0, 2)
   }
 
-  // Generate a consistent color based on the name or initials
   const getColor = (text: string) => {
     const colors = [
       'bg-blue-500',

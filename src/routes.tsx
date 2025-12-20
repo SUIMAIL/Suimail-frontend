@@ -20,6 +20,8 @@ import WalletPage from './views/accounts/wallet/page'
 import EmailViewPage from './views/mail/[id]/page'
 import { useEffect } from 'react'
 import { trackPageView } from './utils/mixpanel'
+import TestDecrypt from './views/test-decrypt'
+import ReplyPage from './views/mail/[id]/reply'
 
 const Layout = () => {
   const location = useLocation()
@@ -114,6 +116,14 @@ const routes = createBrowserRouter([
               {
                 path: '/settings',
                 element: <SettingsPage />,
+              },
+              {
+                path: '/test-decrypt',
+                element: <TestDecrypt />,
+              },
+              {
+                path: '/mail/reply',
+                element: <ReplyPage />,
               },
             ],
           },

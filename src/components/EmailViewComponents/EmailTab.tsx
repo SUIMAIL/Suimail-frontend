@@ -64,12 +64,9 @@ export function EmailTab({
     const updateFunction = (oldData: unknown) => {
       if (!oldData) return oldData
 
-      // Handle different data structures
       if (typeof oldData === 'object' && oldData && 'pages' in oldData) {
-        // Infinite query structure
         return {
           ...oldData,
-          // eslint-disable-next-line @typescript-eslint/no-explicit-any
           pages: (oldData as { pages: any[] }).pages.map(page => ({
             ...page,
             data:
@@ -81,7 +78,6 @@ export function EmailTab({
           })),
         }
       } else if (Array.isArray(oldData)) {
-        // Simple array structure
         return oldData.map((m: IEmail) =>
           m.id === mail.id ? { ...m, readAt: new Date().toISOString() } : m
         )
@@ -91,7 +87,6 @@ export function EmailTab({
         'data' in oldData &&
         Array.isArray((oldData as { data: IEmail[] }).data)
       ) {
-        // Object with data array
         return {
           ...oldData,
           data: (oldData as { data: IEmail[] }).data.map((m: IEmail) =>
@@ -103,11 +98,9 @@ export function EmailTab({
       return oldData
     }
 
-    // Update inbox and outbox caches
     queryClient.setQueriesData({ queryKey: ['inbox-mails'] }, updateFunction)
     queryClient.setQueriesData({ queryKey: ['outbox-mails'] }, updateFunction)
 
-    // Update mail-body cache
     queryClient.setQueryData(['mail-body', mail.id], (oldData: unknown) => {
       if (!oldData) return oldData
       return { ...oldData, readAt: new Date().toISOString() }

@@ -1,4 +1,3 @@
-// Fix: declare tinymceScriptLoaded on window
 declare global {
   interface Window {
     tinymceScriptLoaded?: boolean
@@ -13,7 +12,6 @@ interface MailBoardPageLayoutProps {
 
 const MailBoardPageLayout = ({ children }: MailBoardPageLayoutProps) => {
   useEffect(() => {
-    // ✅ Preload TinyMCE once per session
     if (!window.tinymceScriptLoaded) {
       const script = document.createElement('script')
       script.src =

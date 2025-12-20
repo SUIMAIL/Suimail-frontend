@@ -30,7 +30,6 @@ export function PreferencesView() {
     applyTheme(theme)
     localStorage.setItem('suimail-theme', theme)
 
-    // Listen for system theme changes if system is selected
     if (theme === 'system') {
       const mediaQuery = window.matchMedia('(prefers-color-scheme: dark)')
       const handleChange = () => applyTheme('system')
