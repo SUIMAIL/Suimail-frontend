@@ -54,6 +54,7 @@ const WALRUS_SERVICES: WalrusService[] = [
     aggregatorUrl:
       'https://wal-aggregator-testnet.staketab.org/v1/blobs/${blobId}',
   },
+  //these seem to be dummy urls, they may cause occational errors if not replaced with real ones
   {
     id: 'service2',
     name: 'walrus space',
