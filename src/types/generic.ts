@@ -21,9 +21,9 @@ export interface IEmail {
   subject: string
   senderId: string
   recipientId: string
-  MailBlobId: string
+  mailBlobId: string
   // attachments: string[]
-  MailobjectId: string
+  mailObjectId: string
   sender: Pick<IUser, 'suimailNs' | 'imageUrl'>
   recipient: Pick<IUser, 'suimailNs' | 'imageUrl'>
   readAt?: string

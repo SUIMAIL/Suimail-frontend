@@ -1,4 +1,4 @@
-import { Loader2, Unlock, Lock } from 'lucide-react'
+import { Loader2, Unlock, Lock, FileWarning } from 'lucide-react'
 import { SessionKey } from '@mysten/seal'
 import type { IEmail } from '@/types/generic'
 import type { DecryptedContent } from '../types'
@@ -22,8 +22,12 @@ export function MessageBody({
   suiClient,
   packageId,
 }: MessageBodyProps) {
+  const hasAttachments = email.attachments && email.attachments.length > 0
+  const canDecryptAttachments = !!(sessionKey && email.mailObjectId)
+
   return (
     <div className="px-4 sm:px-6 pb-6">
+      {/* Email Content */}
       {isDecrypting ? (
         <div className="flex flex-col items-center justify-center py-12">
           <Loader2 className="h-8 w-8 animate-spin text-blue-base mb-4" />
@@ -42,8 +46,8 @@ export function MessageBody({
         </>
       ) : (
         <>
-          <EmailBodyFormatter body={email.body} />
-          {email.MailBlobId && (
+          {email.body && <EmailBodyFormatter body={email.body} />}
+          {email.mailBlobId && (
             <div className="mt-4 flex items-center text-xs text-yellow-600">
               <Lock className="h-4 w-4 mr-1" />
               <span>This message is encrypted but couldn't be decrypted</span>
@@ -52,26 +56,46 @@ export function MessageBody({
         </>
       )}
 
-      {email.attachments &&
-        Array.isArray(email.attachments) &&
-        email.attachments.length > 0 &&
-        sessionKey &&
-        email.MailobjectId && (
-          <div className="mt-6 p-4 surface-dark rounded-lg border border-border elevation-1">
-            <div className="text-sm font-medium text-foreground mb-3">
-              {email.attachments.length} attachment
-              {email.attachments.length > 1 ? 's' : ''}
-            </div>
+      {/* Attachments Section */}
+      {hasAttachments && (
+        <div className="mt-6 p-4 surface-dark rounded-lg border border-border elevation-1">
+          <div className="text-sm font-medium text-foreground mb-3">
+            {email.attachments!.length} attachment
+            {email.attachments!.length > 1 ? 's' : ''}
+          </div>
 
+          {canDecryptAttachments ? (
             <RenderAttachments
-              attachments={email.attachments}
-              mailObjectId={email.MailobjectId}
+              attachments={email.attachments!}
+              mailObjectId={email.mailObjectId}
               sessionKey={sessionKey}
               suiClient={suiClient}
               packageId={packageId}
             />
-          </div>
-        )}
+          ) : (
+            <div className="flex items-center gap-2 p-3 bg-yellow-500/10 border border-yellow-500/20 rounded text-sm text-yellow-600">
+              <FileWarning className="h-4 w-4 flex-shrink-0" />
+              <div className="w-full">
+                <div className="font-medium">Encrypted attachments</div>
+                <div className="text-xs mt-1">
+                  {!sessionKey && 'Missing session key. '}
+                  {!email.mailObjectId && 'Missing mail object ID. '}
+                  Unable to decrypt attachments.
+                </div>
+                <div className="mt-2 space-y-1">
+                  {email.attachments!.map((att, idx) => (
+                    <div key={idx} className="text-xs opacity-75">
+                      📎 {att.fileName} ({att.fileType})
+                    </div>
+                  ))}
+                </div>
+              </div>
+            </div>
+          )}
+        </div>
+      )}
+
+      {/* Blockchain Verification */}
       {email.digest && (
         <div className="mt-6 p-4 bg-blue-base/10 rounded-lg border border-blue-base/20">
           <div className="flex items-center justify-between">

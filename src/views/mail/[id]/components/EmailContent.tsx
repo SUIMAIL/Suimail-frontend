@@ -2,7 +2,7 @@ import { SessionKey } from '@mysten/seal'
 import { SuiClient } from '@mysten/sui/client'
 import type { IEmail } from '@/types/generic'
 import type { DecryptedContent } from '../types'
-// import { QuotedMessage } from './QuotedMessage'
+import { QuotedMessage } from './QuotedMessage'
 import { MessageBody } from './MessageBody'
 import { MessageHeader } from './MessageHeader'
 
