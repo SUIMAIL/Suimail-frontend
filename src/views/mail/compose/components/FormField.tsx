@@ -8,6 +8,7 @@ import type {
 } from 'react-hook-form'
 import type { ComposeFormData } from './FormSection'
 import { ComposeEditor } from './ComposeEditor'
+
 interface FormFieldProps {
   label: string
   name: keyof ComposeFormData
@@ -21,6 +22,9 @@ interface FormFieldProps {
   rows?: number
   extendAction?: React.ReactNode
   onBlur?: (e: React.FocusEvent<HTMLInputElement | HTMLTextAreaElement>) => void
+  onChange?: (
+    e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>
+  ) => void
   useRichEditor?: boolean
   disabled?: boolean
   readonly?: boolean
@@ -40,20 +44,29 @@ export const FormField = ({
   rows,
   extendAction,
   onBlur,
+  onChange, // ✅ Add this
   useRichEditor = false,
   disabled,
   readonly,
   className,
 }: FormFieldProps) => {
+  const registerProps = register(name, {
+    onBlur: e => {
+      if (onBlur) {
+        onBlur(e)
+      }
+    },
+  })
+
   const commonProps = {
     placeholder,
-    ...register(name, {
-      onBlur: e => {
-        if (onBlur) {
-          onBlur(e)
-        }
-      },
-    }),
+    ...registerProps,
+    onChange: (
+      e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>
+    ) => {
+      registerProps.onChange(e)
+      onChange?.(e)
+    },
     required,
     disabled,
     readOnly: readonly,

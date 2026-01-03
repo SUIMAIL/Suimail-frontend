@@ -1,8 +1,8 @@
 import type React from 'react'
-import { useEffect, useMemo, useState } from 'react'
+import { useEffect, useMemo, useState, useCallback, useRef } from 'react'
 import { z } from 'zod'
 import { useForm } from 'react-hook-form'
-import { Paperclip, Send, X, Loader2, Mail } from 'lucide-react'
+import { Paperclip, Send, X, Loader2, Mail, Trash2, Save } from 'lucide-react'
 import { zodResolver } from '@hookform/resolvers/zod'
 import { FormField } from './FormField'
 import { Input } from '@/components/ui/input'
@@ -17,6 +17,18 @@ import { AxiosError } from 'axios'
 import { isValidSuimailAddress } from '@/utils/helpers'
 import { useQueryClient } from '@tanstack/react-query'
 import prettyBytes from 'pretty-bytes'
+import { useDraftContext } from '@/utils/contexts/DraftContext'
+import {
+  useSaveDraftMutation,
+  useFetchDraftQuery,
+  useDeleteDraftMutation,
+} from '@/hooks/mail'
+import { DraftAutoSaveIndicator } from '@/components/DraftAutoSaveIndicator'
+import {
+  encryptAndUploadDraft,
+  downloadAndDecryptDraft,
+} from '@/utils/draft-helpers'
+import { useCurrentWallet } from '@mysten/dapp-kit'
 
 const formSchema = z.object({
   recipient: z.string().refine(value => isValidSuimailAddress(value), {
@@ -37,14 +49,46 @@ interface OnSubmitValues extends ComposeFormData {
 interface FormSectionProps {
   onSubmit: (data: OnSubmitValues) => Promise<void>
   isLoading?: boolean
+  draftId?: string
 }
 
-export function FormSection({ onSubmit, isLoading }: FormSectionProps) {
+export function FormSection({
+  onSubmit,
+  isLoading,
+  draftId,
+}: FormSectionProps) {
   const queryClient = useQueryClient()
+  const { currentWallet } = useCurrentWallet()
+  const userAddress = currentWallet?.accounts[0]?.address
 
   const [recipientIsSet, setRecipientIsSet] = useState(false)
   const [recipientAddress, setRecipientAddress] = useState<string | null>(null)
   const [recipientError, setRecipientError] = useState<string | null>(null)
+
+  const {
+    isSaving,
+    setIsSaving,
+    setSaveError,
+    hasUnsavedChanges,
+    setHasUnsavedChanges,
+    currentDraftId,
+    setCurrentDraftId,
+  } = useDraftContext()
+
+  const [draftCache, setDraftCache] = useState<{
+    recipient: string
+    subject: string
+    message: string
+  } | null>(null)
+  const [lastSavedAtLocal, setLastSavedAtLocal] = useState<Date | null>(null)
+
+  const { mutateAsync: saveDraft } = useSaveDraftMutation()
+  const { mutateAsync: deleteDraft } = useDeleteDraftMutation()
+  const { data: fetchedDraftData, isFetching: isFetchingDraft } =
+    useFetchDraftQuery(draftId || '')
+
+  const autoSaveIntervalRef = useRef<NodeJS.Timeout | null>(null)
+  const latestValuesRef = useRef({ recipient: '', subject: '', message: '' })
 
   const {
     register,
@@ -52,6 +96,7 @@ export function FormSection({ onSubmit, isLoading }: FormSectionProps) {
     formState: { errors },
     setValue,
     watch,
+    reset,
   } = useForm<ComposeFormData>({
     resolver: zodResolver(formSchema),
     defaultValues: {
@@ -97,10 +142,19 @@ export function FormSection({ onSubmit, isLoading }: FormSectionProps) {
   const attachments = watch('attachments') || []
   const isValidating = isFetchingMailFeeAndAddress || isFetchingSenderListedData
 
+  // Track all form changes
+  useEffect(() => {
+    const subscription = watch(() => {
+      setHasUnsavedChanges(true)
+    })
+    return () => subscription.unsubscribe()
+  }, [watch, setHasUnsavedChanges])
+
   const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     if (e.target.files) {
       const newFiles = Array.from(e.target.files)
       setValue('attachments', [...attachments, ...newFiles])
+      setHasUnsavedChanges(true)
     }
   }
 
@@ -109,7 +163,170 @@ export function FormSection({ onSubmit, isLoading }: FormSectionProps) {
       'attachments',
       attachments.filter((_, i) => i !== index)
     )
+    setHasUnsavedChanges(true)
   }
+
+  useEffect(() => {
+    if (draftId && fetchedDraftData?.draft && !isFetchingDraft && userAddress) {
+      const loadDraft = async () => {
+        try {
+          const walrusBlobId = fetchedDraftData.draft.walrusBlobId
+
+          let content
+          if (walrusBlobId) {
+            content = await downloadAndDecryptDraft({
+              blobId: walrusBlobId,
+              userAddress,
+            })
+          } else if (fetchedDraftData.draft.encryptedContent) {
+            setSaveError(
+              'This draft uses old format. Please save it again to migrate to Walrus.'
+            )
+            return
+          } else {
+            throw new Error('Draft has no content')
+          }
+
+          setValue('recipient', fetchedDraftData.draft.recipientId || '')
+          setValue('subject', content.subject)
+          setValue('message', content.message)
+
+          setCurrentDraftId(draftId)
+          setHasUnsavedChanges(false)
+        } catch (error) {
+          console.error('Failed to decrypt draft:', error)
+          setSaveError('Failed to load draft. You may not have access.')
+        }
+      }
+      loadDraft()
+    }
+  }, [
+    draftId,
+    fetchedDraftData,
+    isFetchingDraft,
+    userAddress,
+    setCurrentDraftId,
+    setHasUnsavedChanges,
+    setSaveError,
+    setValue,
+  ])
+
+  const handleAutoSave = useCallback(
+    async (recipient: string, subject: string, message: string) => {
+      // Check if wallet is connected
+      if (!userAddress) {
+        console.error('No wallet connected for auto-save')
+        setSaveError('Please connect your wallet to save drafts')
+        return
+      }
+
+      setIsSaving(true)
+      setSaveError(null)
+
+      try {
+        // Generate or use existing draft ID
+        const activeDraftId =
+          currentDraftId ||
+          `draft_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`
+
+        // Get Walrus publisher URL from environment
+        const publisherUrl =
+          import.meta.env.VITE_WALRUS_PUBLISHER_URL ||
+          'https://walrus.testnet.publisher.stakepool.dev.br'
+
+        // Encrypt and upload to Walrus
+        const walrusBlobId = await encryptAndUploadDraft({
+          subject,
+          message,
+          draftId: activeDraftId,
+          userAddress,
+          publisherUrl,
+        })
+
+        const payload: any = {
+          walrusBlobId, // Changed from encryptedContent to walrusBlobId
+        }
+
+        // Only include recipientId if provided and not empty
+        if (recipient && recipient.trim()) {
+          payload.recipientId = recipient
+        }
+
+        // Include draftId if editing an existing draft
+        if (currentDraftId) {
+          payload.draftId = currentDraftId
+        }
+
+        const result = await saveDraft(payload)
+        setDraftCache({ recipient, subject, message })
+        setLastSavedAtLocal(new Date())
+
+        // Set draft ID if this is a new draft
+        if (!currentDraftId && result?.draftId) {
+          setCurrentDraftId(result.draftId)
+        }
+
+        await queryClient.invalidateQueries({
+          queryKey: ['drafts-mails'],
+        })
+
+        setHasUnsavedChanges(false)
+      } catch (error: any) {
+        console.error('Auto-save failed:', error)
+
+        if (error.response?.status === 401) {
+          setSaveError('Authentication required')
+        } else if (error.message?.includes('Walrus')) {
+          setSaveError('Failed to upload to Walrus storage')
+        } else {
+          setSaveError('Failed to save encrypted draft')
+        }
+      } finally {
+        setIsSaving(false)
+      }
+    },
+    [
+      saveDraft,
+      setIsSaving,
+      setSaveError,
+      setHasUnsavedChanges,
+      queryClient,
+      currentDraftId,
+      setCurrentDraftId,
+      userAddress,
+    ]
+  )
+
+  // Auto-save draft every 10 seconds
+  useEffect(() => {
+    if (autoSaveIntervalRef.current) {
+      clearInterval(autoSaveIntervalRef.current)
+    }
+
+    // Subscribe to form changes
+    const subscription = watch(data => {
+      latestValuesRef.current = {
+        recipient: data.recipient || '',
+        subject: data.subject || '',
+        message: data.message || '',
+      }
+    })
+
+    autoSaveIntervalRef.current = setInterval(async () => {
+      const { recipient, subject, message } = latestValuesRef.current
+
+      if (hasUnsavedChanges && recipient && (subject || message)) {
+        await handleAutoSave(recipient, subject, message)
+      }
+    }, 10000)
+
+    return () => {
+      subscription.unsubscribe()
+      if (autoSaveIntervalRef.current) {
+        clearInterval(autoSaveIntervalRef.current)
+      }
+    }
+  }, [hasUnsavedChanges, handleAutoSave, watch])
 
   const handleOnSubmit = async (data: ComposeFormData) => {
     if (!recipientAddress) {
@@ -124,13 +341,24 @@ export function FormSection({ onSubmit, isLoading }: FormSectionProps) {
       recipientAddress: recipientAddress ?? '',
     })
 
-    setValue('recipient', '')
-    setValue('subject', '')
-    setValue('message', '')
-    setValue('attachments', [])
+    // Clear draft after successful send
+    if (currentDraftId) {
+      try {
+        await deleteDraft(currentDraftId)
+        await queryClient.invalidateQueries({
+          predicate: query => query.queryKey[0] === 'drafts-mails',
+        })
+      } catch (error) {
+        console.error('Failed to delete draft after send:', error)
+      }
+    }
+
+    reset()
     setRecipientIsSet(false)
     setRecipientAddress(null)
     setRecipientError(null)
+    setCurrentDraftId(null)
+    setHasUnsavedChanges(false)
   }
 
   useEffect(() => {
@@ -148,6 +376,24 @@ export function FormSection({ onSubmit, isLoading }: FormSectionProps) {
       }
     }
   }, [mailFeeAndAddressResult, senderListedData, setValue])
+
+  // Show toast notification when navigating away with unsaved changes
+  useEffect(() => {
+    const handleBeforeUnload = (e: BeforeUnloadEvent) => {
+      if (hasUnsavedChanges && (draftCache?.subject || draftCache?.message)) {
+        e.preventDefault()
+        e.returnValue = ''
+      }
+    }
+
+    if (hasUnsavedChanges && draftCache) {
+      window.addEventListener('beforeunload', handleBeforeUnload)
+
+      return () => {
+        window.removeEventListener('beforeunload', handleBeforeUnload)
+      }
+    }
+  }, [hasUnsavedChanges, draftCache])
 
   useEffect(() => {
     if (
@@ -183,14 +429,50 @@ export function FormSection({ onSubmit, isLoading }: FormSectionProps) {
     setRecipientAddress(null)
     setRecipientError(null)
     setValue('recipient', '')
+    setHasUnsavedChanges(true)
+  }
+
+  // Track changes
+  useEffect(() => {
+    if (draftId) {
+      const subscription = watch(() => {
+        setHasUnsavedChanges(true)
+      })
+      return () => subscription.unsubscribe()
+    }
+  }, [watch, draftId, setHasUnsavedChanges])
+
+  const handleManualSaveDraft = async () => {
+    const recipient = watch('recipient')
+    const subject = watch('subject')
+    const message = watch('message')
+
+    if (!recipient) {
+      setSaveError('Please enter a recipient')
+      setTimeout(() => setSaveError(null), 3000)
+      return
+    }
+
+    if (!userAddress) {
+      setSaveError('Please connect your wallet to save drafts')
+      setTimeout(() => setSaveError(null), 3000)
+      return
+    }
+
+    await handleAutoSave(recipient, subject, message)
   }
 
   return (
     <div className="surface-base elevation-1 rounded-xl border border-border overflow-hidden">
       {/* Header */}
-      <div className="surface-dark px-6 py-4 border-b border-border flex items-center gap-3">
-        <Mail className="w-5 h-5 text-blue-base" />
-        <h2 className="text-lg font-semibold text-foreground">New Message</h2>
+      <div className="surface-dark px-6 py-4 border-b border-border flex items-center justify-between gap-3">
+        <div className="flex items-center gap-3">
+          <Mail className="w-5 h-5 text-blue-base" />
+          <h2 className="text-lg font-semibold text-foreground">
+            {currentDraftId ? 'Edit Draft' : 'New Message'}
+          </h2>
+        </div>
+        <DraftAutoSaveIndicator lastSavedAt={lastSavedAtLocal} />
       </div>
 
       <form onSubmit={handleSubmit(handleOnSubmit)} className="p-6 space-y-6">
@@ -261,6 +543,7 @@ export function FormSection({ onSubmit, isLoading }: FormSectionProps) {
           error={errors.subject?.message}
           register={register}
           required
+          onChange={() => setHasUnsavedChanges(true)}
         />
 
         {/* Message */}
@@ -276,6 +559,7 @@ export function FormSection({ onSubmit, isLoading }: FormSectionProps) {
           required
           rows={12}
           useRichEditor={true}
+          onChange={() => setHasUnsavedChanges(true)}
         />
 
         {/* Attachments */}
@@ -323,7 +607,50 @@ export function FormSection({ onSubmit, isLoading }: FormSectionProps) {
         </div>
 
         {/* Submit */}
-        <div className="flex justify-end pt-2">
+        <div className="flex justify-end gap-3 pt-2">
+          {currentDraftId && (
+            <Button
+              type="button"
+              variant="outline"
+              onClick={async () => {
+                try {
+                  await deleteDraft(currentDraftId)
+                  await queryClient.invalidateQueries({
+                    predicate: query => query.queryKey[0] === 'drafts-mails',
+                  })
+                  reset()
+                  setCurrentDraftId(null)
+                  setHasUnsavedChanges(false)
+                } catch {
+                  setSaveError('Failed to delete draft')
+                }
+              }}
+              disabled={isLoading || isSaving}
+              className="gap-2"
+            >
+              <Trash2 className="w-4 h-4" />
+              Delete Draft
+            </Button>
+          )}
+          <Button
+            type="button"
+            variant="outline"
+            onClick={handleManualSaveDraft}
+            disabled={isLoading || isSaving || !userAddress}
+            className="gap-2"
+          >
+            {isSaving ? (
+              <>
+                <Loader2 className="w-4 h-4 animate-spin" />
+                Saving...
+              </>
+            ) : (
+              <>
+                <Save className="w-4 h-4" />
+                Save Draft
+              </>
+            )}
+          </Button>
           <Button
             type="submit"
             disabled={

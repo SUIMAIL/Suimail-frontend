@@ -2,23 +2,36 @@ import { Button } from '@/components/ui/button'
 
 interface ConfirmDeleteModalProps {
   isOpen: boolean
-  onClose: () => void
+  onCancel?: () => void
+  onClose?: () => void
   onConfirm: () => void
+  isLoading?: boolean
+  isDeletingDraft?: boolean
   isDeleting?: boolean
   emailSubject?: string
+  title?: string
+  description?: string
 }
 
 export function ConfirmDeleteModal({
   isOpen,
+  onCancel,
   onClose,
   onConfirm,
+  isLoading = false,
+  isDeletingDraft = false,
   isDeleting = false,
+  title = 'Delete Email?',
+  description = 'This action cannot be undone. The email will be permanently removed.',
 }: ConfirmDeleteModalProps) {
   if (!isOpen) return null
 
+  const handleClose = onCancel || onClose || (() => {})
+  const isDeleting_ = isLoading || isDeletingDraft || isDeleting
+
   const handleBackdropClick = (e: React.MouseEvent<HTMLDivElement>) => {
-    if (e.target === e.currentTarget && !isDeleting) {
-      onClose()
+    if (e.target === e.currentTarget && !isDeleting_) {
+      handleClose()
     }
   }
 
@@ -30,28 +43,16 @@ export function ConfirmDeleteModal({
       <div className="surface-light border border-border rounded-lg shadow-xl max-w-md w-full mx-4 elevation-3">
         {/* Content */}
         <div className="p-6">
-          <p className="text-foreground mb-2">
-            Are you sure you want to delete this email?
-          </p>
-          {/* {emailSubject && (
-            <div className="p-3 surface-dark rounded-lg border border-border mt-3">
-              <p className="text-sm text-muted-foreground mb-1">Subject:</p>
-              <p className="text-sm font-medium text-foreground truncate">
-                {emailSubject}
-              </p>
-            </div>
-          )} */}
-          <p className="text-sm text-muted-foreground mt-4">
-            This action cannot be undone. The email will be permanently removed.
-          </p>
+          <p className="text-foreground mb-2 font-medium">{title}</p>
+          <p className="text-sm text-muted-foreground">{description}</p>
         </div>
 
         {/* Actions */}
         <div className="flex items-center justify-end space-x-3 p-4 border-t border-border surface-dark">
           <Button
             variant="ghost"
-            onClick={onClose}
-            disabled={isDeleting}
+            onClick={handleClose}
+            disabled={isDeleting_}
             className="hover:bg-accent"
           >
             Cancel
@@ -59,16 +60,16 @@ export function ConfirmDeleteModal({
           <Button
             variant="destructive"
             onClick={onConfirm}
-            disabled={isDeleting}
+            disabled={isDeleting_}
             className="bg-destructive hover:bg-destructive/90 text-white"
           >
-            {isDeleting ? (
+            {isDeleting_ ? (
               <>
                 <span className="mr-2">Deleting....</span>
                 <span className="inline-block animate-spin">⏳</span>
               </>
             ) : (
-              'Delete Email'
+              'Delete'
             )}
           </Button>
         </div>

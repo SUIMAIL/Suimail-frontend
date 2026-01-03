@@ -1,11 +1,12 @@
 import { useState } from 'react'
-import { useNavigate } from 'react-router-dom'
+import { useNavigate, useSearchParams } from 'react-router-dom'
 import { ArrowLeft } from 'lucide-react'
 import { useQueryClient } from '@tanstack/react-query'
 import { Button } from '@/components/ui/button'
 import { usePostSendMailMutation } from '@/hooks/mail'
 import { FormSection } from './components/FormSection'
 import { useToastContext } from '@/components/ui/toast'
+import { DraftProvider } from '@/utils/contexts/DraftContext'
 import { useCreateEscrowTx } from './utils/create-escrow-tx'
 import {
   checkValidAttachmentSize,
@@ -20,8 +21,6 @@ import { useSignAndExecuteTransaction, useSuiClient } from '@mysten/dapp-kit'
 import { Transaction } from '@mysten/sui/transactions'
 import { SealClient } from '@mysten/seal'
 import { fromHex, toHex } from '@mysten/sui/utils'
-// import { useCurrentWallet } from '@mysten/dapp-kit'
-// import { string } from 'zod'
 
 const PACKAGE_ID = import.meta.env.VITE_PACKAGE_ID
 const NUM_EPOCHS = 50
@@ -54,7 +53,6 @@ const WALRUS_SERVICES: WalrusService[] = [
     aggregatorUrl:
       'https://wal-aggregator-testnet.staketab.org/v1/blobs/${blobId}',
   },
-  //these seem to be dummy urls, they may cause occational errors if not replaced with real ones
   {
     id: 'service2',
     name: 'walrus space',
@@ -200,26 +198,7 @@ export default function ComposePage() {
     return results
   }
 
-  // for (const file of attachments) {
-  //   console.log(`Encrypting attachment: ${file.name}`)
-
-  //     const arrayBuffer = await file.arrayBuffer()
-  //     const dataBytes = new Uint8Array(arrayBuffer)
-
-  //     const blobId = await encryptAndUploadToWalrus(dataBytes, policyObjectId)
-  //     blobIds.push(blobId)
-
-  //     console.log(`Attachment ${file.name} encrypted, Blob ID: ${blobId}`)
-  //   }
-
-  //   return blobIds
-  // }
-
-  const createMail = async (
-    recipient: string
-    // mailBlobId: string,
-    // attachmentBlobIds: string[]
-  ): Promise<string | null> => {
+  const createMail = async (recipient: string): Promise<string | null> => {
     return new Promise((resolve, reject) => {
       const tx = new Transaction()
 
@@ -407,20 +386,6 @@ export default function ComposePage() {
         }
       }
 
-      // const formData = new FormData()
-      // formData.append('recipient', data.recipient)
-      // formData.append('subject', data.subject)
-      // formData.append('mailBlobId', mailBlobId)
-      // formData.append('mailObjectId', mailObjectId)
-
-      // if (attachmentBlobIds.length > 0) {
-      //   formData.append('attachmentBlobIds', JSON.stringify(attachmentBlobIds))
-      // }
-
-      // if (createEscrowTxDigest.length > 0 && createEscrowTxDigest !== 'false') {
-      //   formData.append('escrowDigest', createEscrowTxDigest)
-      // }
-
       const payload = {
         recipient: data.recipient,
         subject: data.subject,
@@ -490,6 +455,35 @@ export default function ComposePage() {
   }
 
   return (
+    <DraftProvider>
+      <ComposePageContent
+        selectedWalrusService={selectedWalrusService}
+        setSelectedWalrusService={setSelectedWalrusService}
+        handleSend={handleSend}
+        isSendingMail={isSendingMail}
+        navigate={navigate}
+      />
+    </DraftProvider>
+  )
+}
+
+function ComposePageContent({
+  selectedWalrusService,
+  setSelectedWalrusService,
+  handleSend,
+  isSendingMail,
+  navigate,
+}: {
+  selectedWalrusService: string
+  setSelectedWalrusService: (service: string) => void
+  handleSend: (data: any) => Promise<void>
+  isSendingMail: boolean
+  navigate: any
+}) {
+  const [searchParams] = useSearchParams()
+  const draftId = searchParams.get('draftId')
+
+  return (
     <div className="flex flex-col min-h-screen surface-base">
       {/* Header */}
       <div className="sticky top-0 z-10 flex items-center gap-3 border-b border-border surface-light elevation-1 px-4 py-3">
@@ -502,7 +496,9 @@ export default function ComposePage() {
         >
           <ArrowLeft className="h-5 w-5 text-foreground" />
         </Button>
-        <h1 className="text-lg font-semibold text-foreground">New Message</h1>
+        <h1 className="text-lg font-semibold text-foreground">
+          {draftId ? 'Edit Draft' : 'New Message'}
+        </h1>
       </div>
 
       {/* Content */}
@@ -530,7 +526,12 @@ export default function ComposePage() {
             </p>
           </div>
 
-          <FormSection onSubmit={handleSend} isLoading={isSendingMail} />
+          {/* Pass FormSection without sessionKey - uses wallet address instead */}
+          <FormSection
+            onSubmit={handleSend}
+            isLoading={isSendingMail}
+            draftId={draftId || undefined}
+          />
         </div>
       </div>
     </div>

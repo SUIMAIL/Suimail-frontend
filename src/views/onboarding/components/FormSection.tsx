@@ -35,7 +35,6 @@ export function FormSection({ handleSubmit, isProcessing }: FormSectionProps) {
     })
 
   const availability: Availability = useMemo(() => {
-    // console.log('Current Account', currentAccount?.address)
     if (isCheckingAvailability) {
       return 'checking'
     }
@@ -48,7 +47,6 @@ export function FormSection({ handleSubmit, isProcessing }: FormSectionProps) {
   const handleAddressChange = (value: string) => {
     let cleanValue = value.replace(/@suimailapp$/g, '')
 
-    // Prevent .sui in standard names (only allowed for verified users)
     if (cleanValue.includes('.sui')) {
       cleanValue = cleanValue.replace(/\.sui/g, '')
     }

@@ -8,9 +8,9 @@ interface EmailListToolbarProps {
   handleSelectAllEmails: (checked: boolean) => void
   hasSelectedEmails: boolean
   refetch?: () => void
-
   handleMarkSelectedEmailsAsRead: () => void
   handleDeleteSelectedEmails: () => void
+  isDraftView?: boolean // ✅ Add this prop
 }
 
 export function EmailListToolbar({
@@ -19,6 +19,7 @@ export function EmailListToolbar({
   handleSelectAllEmails,
   handleDeleteSelectedEmails,
   handleMarkSelectedEmailsAsRead,
+  isDraftView = false, // ✅ Add this with default
 }: EmailListToolbarProps) {
   return (
     <div className="flex items-center gap-2">
@@ -26,24 +27,33 @@ export function EmailListToolbar({
 
       {hasSelectedEmails ? (
         <div className="flex items-center gap-2 pl-2">
-          <Tooltip>
-            <TooltipTrigger asChild>
-              <Button
-                variant="ghost"
-                size="icon"
-                onClick={handleMarkSelectedEmailsAsRead}
-                className="hover:bg-blue-base/10 hover:text-blue-base"
-              >
-                <MailOpen className="w-4 h-4" />
-              </Button>
-            </TooltipTrigger>
-            <TooltipContent>
-              <p>Mark as read</p>
-            </TooltipContent>
-          </Tooltip>
+          {/* ✅ Only show "Mark as Read" for non-draft views */}
+          {!isDraftView && (
+            <>
+              <Tooltip>
+                <TooltipTrigger asChild>
+                  <Button
+                    variant="ghost"
+                    size="icon"
+                    onClick={handleMarkSelectedEmailsAsRead}
+                    className="hover:bg-blue-base/10 hover:text-blue-base"
+                  >
+                    <MailOpen className="w-4 h-4" />
+                  </Button>
+                </TooltipTrigger>
+                <TooltipContent>
+                  <p>Mark as read</p>
+                </TooltipContent>
+              </Tooltip>
 
-          <Separator orientation="vertical" className="h-5 w-px bg-border" />
+              <Separator
+                orientation="vertical"
+                className="h-5 w-px bg-border"
+              />
+            </>
+          )}
 
+          {/* ✅ Delete button with updated tooltip text for drafts */}
           <Tooltip>
             <TooltipTrigger asChild>
               <Button
@@ -56,21 +66,28 @@ export function EmailListToolbar({
               </Button>
             </TooltipTrigger>
             <TooltipContent className="bg-destructive text-destructive-foreground">
-              <p>Delete</p>
+              <p>{isDraftView ? 'Delete drafts' : 'Delete'}</p>
             </TooltipContent>
           </Tooltip>
         </div>
       ) : (
         <>
           {refetch && (
-            <Button
-              variant="ghost"
-              size="icon"
-              onClick={refetch}
-              className="hover:bg-blue-base/10 hover:text-blue-base"
-            >
-              <RefreshCw className="w-4 h-4" />
-            </Button>
+            <Tooltip>
+              <TooltipTrigger asChild>
+                <Button
+                  variant="ghost"
+                  size="icon"
+                  onClick={refetch}
+                  className="hover:bg-blue-base/10 hover:text-blue-base"
+                >
+                  <RefreshCw className="w-4 h-4" />
+                </Button>
+              </TooltipTrigger>
+              <TooltipContent>
+                <p>Refresh</p>
+              </TooltipContent>
+            </Tooltip>
           )}
         </>
       )}

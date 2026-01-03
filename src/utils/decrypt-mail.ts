@@ -5,7 +5,7 @@ import {
   NoAccessError,
   EncryptedObject,
 } from '@mysten/seal'
-import { SuiClient } from '@mysten/sui/client'
+import { SuiClient } from '@mysten/sui/client' // ✅ This is correct
 import { Transaction } from '@mysten/sui/transactions'
 import { fromHex } from '@mysten/bcs'
 
@@ -20,9 +20,6 @@ export interface DecryptedMailContent {
   timestamp: string
 }
 
-/**
- * Download blob from aggregator and return as Uint8Array
- */
 async function downloadBlobFromAggregator(blobId: string): Promise<Uint8Array> {
   const url = `https://aggregator.walrus-testnet.walrus.space/v1/blobs/${blobId}`
 
@@ -41,34 +38,29 @@ async function downloadBlobFromAggregator(blobId: string): Promise<Uint8Array> {
     if (contentType?.includes('application/json')) {
       const json = await response.json()
       if (!json.data) throw new Error('Blob JSON missing data field')
-      // Decode base64 to Uint8Array
       return Uint8Array.from(atob(json.data), c => c.charCodeAt(0))
     }
 
-    // Raw bytes
     const arrayBuffer = await response.arrayBuffer()
     return new Uint8Array(arrayBuffer)
   } catch (error) {
-    console.error('❌ Failed to download blob:', error)
+    console.error('Failed to download blob:', error)
     throw new Error('Failed to download encrypted content from aggregator')
   }
 }
 
-/**
- * Decrypt mail content using Seal
- */
 export async function decryptMailContent(params: {
   mailBlobId: string
   mailObjectId: string
   sessionKey: SessionKey
-  suiClient: SuiClient
+  suiClient: SuiClient // ✅ Keep SuiClient
   packageId: string
 }): Promise<DecryptedMailContent> {
   const { mailBlobId, mailObjectId, sessionKey, suiClient, packageId } = params
 
   try {
     const sealClient = new SealClient({
-      suiClient,
+      suiClient, // ✅ SealClient accepts SuiClient directly
       serverConfigs: SERVER_OBJECT_IDS.map(id => ({ objectId: id, weight: 1 })),
       verifyKeyServers: false,
     })
@@ -121,7 +113,7 @@ export async function decryptMailContent(params: {
       timestamp: mailContent.timestamp,
     }
   } catch (error) {
-    console.error('❌ Decryption failed:', error)
+    console.error('Decryption failed:', error)
     throw error
   }
 }

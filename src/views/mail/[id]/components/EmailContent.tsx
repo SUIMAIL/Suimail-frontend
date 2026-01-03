@@ -41,7 +41,6 @@ export function EmailContent({
                 email={email}
                 isExpanded={expandedQuotes.has(email.id)}
                 onToggle={() => onToggleQuote(email.id)}
-                mailObjectId={email.MailobjectId}
                 sessionKey={sessionKey}
                 suiClient={suiClient}
                 packageId={packageId}

@@ -28,6 +28,8 @@ export interface IEmail {
   recipient: Pick<IUser, 'suimailNs' | 'imageUrl'>
   readAt?: string
   createdAt: string
+  updatedAt?: string | Date
+
   digest?: string
   parentMailId?: string
   metadata?: {
@@ -37,8 +39,20 @@ export interface IEmail {
     recipient: {
       identifier: string
     }
+    isDraft?: boolean
+    draftMessage?: string
+    decryptError?: boolean
   }
   attachments?: IEmailAttachment[]
+}
+
+export interface IDraft {
+  id: string
+  walrusBlobId: string
+  recipientId: string
+  encryptedContent: string
+  createdAt: string
+  updatedAt: string
 }
 
 export interface IPlan {

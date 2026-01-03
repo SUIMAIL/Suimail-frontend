@@ -22,6 +22,8 @@ import type { IEmail } from '@/types/generic'
 import type { DecryptedContent } from '../types'
 import { EmailBodyFormatter } from '../email-format'
 import RenderAttachments from './RenderAttachments'
+import { SessionKey } from '@mysten/seal'
+import type { SuiClient } from '@mysten/sui/client'
 
 const PACKAGE_ID = import.meta.env.VITE_PACKAGE_ID
 
@@ -29,6 +31,9 @@ interface QuotedMessageProps {
   email: IEmail
   isExpanded: boolean
   onToggle: () => void
+  sessionKey: SessionKey | null
+  suiClient: SuiClient
+  packageId: string
 }
 
 export function QuotedMessage({
@@ -37,7 +42,7 @@ export function QuotedMessage({
   onToggle,
 }: QuotedMessageProps) {
   const suiClient = useSuiClient()
-  const { sessionKey } = useSessionKey()
+  const { sessionKey } = useSessionKey(PACKAGE_ID)
   const { data: profileImageData, isPending: isLoadingProfileImage } =
     useGetUserProfileImageQuery()
   const profileImage = profileImageData?.imageUrl
@@ -101,7 +106,7 @@ export function QuotedMessage({
 
   const getPreviewText = () => {
     if (isDecrypting) return null
-    const text = decryptedContent?.message || email.body
+    const text = decryptedContent?.message
     return text?.replace(/<[^>]*>/g, '').substring(0, 100) + '...'
   }
 
@@ -141,7 +146,7 @@ export function QuotedMessage({
           <div className="min-w-0 flex-1">
             <div className="flex items-center space-x-2">
               <span className="text-sm font-medium text-foreground truncate">
-                {email.sender.suimailNs}
+                {email.sender?.suimailNs || 'Unknown'}
               </span>
               <span className="text-xs text-muted-foreground flex-shrink-0">
                 {formatDate(email.createdAt)}
@@ -183,7 +188,7 @@ export function QuotedMessage({
                 ) : profileImage ? (
                   <img
                     src={profileImage}
-                    alt={email.sender.suimailNs || 'User'}
+                    alt={email.sender?.suimailNs || 'User'}
                     className="w-10 h-10 rounded-full object-cover border-2 border-border shadow-sm"
                   />
                 ) : (
@@ -194,7 +199,7 @@ export function QuotedMessage({
 
                 <div>
                   <div className="font-medium text-foreground">
-                    {email.sender.suimailNs}
+                    {email.sender?.suimailNs || 'Unknown'}
                   </div>
                   <div className="text-sm text-muted-foreground mt-1">
                     <div>to me</div>
@@ -254,8 +259,6 @@ export function QuotedMessage({
                 body={decryptedContent.message}
                 isQuoted={true}
               />
-            ) : email.body ? (
-              <EmailBodyFormatter body={email.body} isQuoted={true} />
             ) : null}
 
             {hasAttachments && canDecryptAttachments && (
@@ -263,7 +266,7 @@ export function QuotedMessage({
                 <RenderAttachments
                   attachments={email.attachments!}
                   mailObjectId={email.mailObjectId}
-                  sessionKey={sessionKey}
+                  sessionKey={sessionKey!}
                   suiClient={suiClient}
                   packageId={PACKAGE_ID}
                 />

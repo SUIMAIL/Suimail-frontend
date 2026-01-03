@@ -27,7 +27,6 @@ export function MessageBody({
 
   return (
     <div className="px-4 sm:px-6 pb-6">
-      {/* Email Content */}
       {isDecrypting ? (
         <div className="flex flex-col items-center justify-center py-12">
           <Loader2 className="h-8 w-8 animate-spin text-blue-base mb-4" />
@@ -46,7 +45,7 @@ export function MessageBody({
         </>
       ) : (
         <>
-          {email.body && <EmailBodyFormatter body={email.body} />}
+          {/* {email.body && <EmailBodyFormatter body={email.body} />} */}
           {email.mailBlobId && (
             <div className="mt-4 flex items-center text-xs text-yellow-600">
               <Lock className="h-4 w-4 mr-1" />

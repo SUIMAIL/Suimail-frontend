@@ -1,6 +1,6 @@
 import { useMutation, useQuery } from '@tanstack/react-query'
 import { httpService } from '../../api'
-import type { IEmail } from '../../types/generic'
+import type { IEmail, IDraft } from '../../types/generic'
 
 export function useFetchMailBodyQuery(mailId: string) {
   return useQuery({
@@ -52,12 +52,170 @@ export function useFetchOutboxQuery() {
   })
 }
 
+export function useFetchDraftsQuery() {
+  return useQuery({
+    queryKey: ['drafts-mails'],
+    queryFn: async (): Promise<{ drafts: IDraft[] }> => {
+      try {
+        const response = await httpService.get('/mail/drafts')
+        return response.data || response
+      } catch (error) {
+        console.error('Error fetching drafts:', error)
+        return { drafts: [] }
+      }
+    },
+    staleTime: 1000 * 60 * 5,
+    gcTime: 1000 * 60 * 10,
+  })
+}
+
+export function useFetchDraftQuery(draftId: string) {
+  return useQuery({
+    queryKey: ['draft-detail', draftId],
+    queryFn: async (): Promise<{ draft: IDraft }> => {
+      return await httpService.get(`/mail/drafts/${draftId}`)
+    },
+    staleTime: 1000 * 60 * 5,
+    gcTime: 1000 * 60 * 10,
+    enabled: !!draftId,
+  })
+}
+
 interface IPostDraftMail {
   walletAddress: string
   recipient: string
   subject: string
   message: string
   attachments: File[]
+}
+
+interface SaveDraftPayload {
+  recipientId?: string | null
+  walrusBlobId: string
+  draftId?: string
+}
+
+export function useSaveDraftMutation() {
+  return useMutation({
+    mutationFn: async (payload: SaveDraftPayload) => {
+      if (!payload.walrusBlobId || payload.walrusBlobId.trim() === '') {
+        throw new Error('Encrypted content is required')
+      }
+
+      const cleanPayload: any = {
+        walrusBlobId: payload.walrusBlobId,
+      }
+
+      if (payload.recipientId && payload.recipientId.trim() !== '') {
+        cleanPayload.recipientId = payload.recipientId
+      }
+
+      if (payload.draftId) {
+        cleanPayload.draftId = payload.draftId
+      }
+
+      try {
+        const response = await httpService.post('/mail/drafts', cleanPayload, {
+          headers: {
+            'Content-Type': 'application/json',
+          },
+        })
+        return response
+      } catch (error: any) {
+        console.error('Draft save error details:', {
+          status: error.response?.status,
+          statusText: error.response?.statusText,
+          data: error.response?.data,
+          message: error.message,
+          payload: cleanPayload,
+        })
+        console.error(
+          'Draft save error - full details object:',
+          JSON.stringify(error.response?.data?.details, null, 2)
+        )
+
+        if (error.response?.status === 500 && cleanPayload.draftId) {
+          const fallbackPayload = { ...cleanPayload }
+          delete fallbackPayload.draftId
+
+          try {
+            const response = await httpService.post(
+              '/mail/drafts',
+              fallbackPayload,
+              {
+                headers: {
+                  'Content-Type': 'application/json',
+                },
+              }
+            )
+            return response
+          } catch (fallbackError) {
+            console.error('Fallback draft save also failed:', fallbackError)
+            throw fallbackError
+          }
+        }
+        throw error
+      }
+    },
+  })
+}
+
+/**
+ * Delete a single draft
+ */
+export function useDeleteDraftMutation() {
+  return useMutation({
+    mutationFn: async (draftId: string) => {
+      return await httpService.delete(`/mail/drafts/${draftId}`)
+    },
+  })
+}
+
+/**
+ * Delete multiple drafts
+ */
+export function useDeleteManyDraftsMutation() {
+  return useMutation({
+    mutationFn: async (draftIds: string[]) => {
+      return await httpService.delete('/mail/drafts/delete-many', {
+        data: { draftIds },
+      })
+    },
+  })
+}
+
+interface ConvertDraftPayload {
+  draftId: string
+  mailBlobId: string
+  mailObjectId: string
+  subject: string
+  recipientId: string
+  escrowDigest?: string
+  attachments?: Array<{
+    blobId: string
+    fileName: string
+    fileType: string
+  }>
+  parentMailId?: string
+}
+
+export function useConvertDraftToSentMutation() {
+  return useMutation({
+    mutationFn: async (payload: ConvertDraftPayload) => {
+      const { draftId, ...data } = payload
+      return await httpService.post(`/mail/drafts/${draftId}/convert`, data, {
+        headers: {
+          'Content-Type': 'application/json',
+        },
+      })
+    },
+  })
+}
+
+interface Attachment {
+  blobId: string
+  fileName: string
+  fileType: string
 }
 
 export function usePostDraftMailMutation() {
@@ -76,11 +234,6 @@ export function usePostDraftMailMutation() {
       })
     },
   })
-}
-interface Attachment {
-  blobId: string
-  fileName: string
-  fileType: string
 }
 
 interface SendMailPayload {

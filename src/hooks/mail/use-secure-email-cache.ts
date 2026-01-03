@@ -1,6 +1,6 @@
 import { useState, useEffect, useRef } from 'react'
 import { SessionKey } from '@mysten/seal'
-import type { SuiClient } from '@mysten/sui/client'
+import { SuiClient } from '@mysten/sui/client'
 import { decryptMailContent } from '@/utils/decrypt-mail'
 
 interface DecryptedEmail {
@@ -94,7 +94,7 @@ export function useSecureEmailDecryption({
       } catch (err: any) {
         if (!isMountedRef.current) return
 
-        console.error('❌ [Decrypt] Decryption failed:', err)
+        console.error('[Decrypt] Decryption failed:', err)
         setError(err.message || 'Failed to decrypt email')
         setDecryptedContent(null)
       } finally {
@@ -105,7 +105,15 @@ export function useSecureEmailDecryption({
     }
 
     decrypt()
-  }, [mailObjectId, mailBlobId, sessionKey, suiClient, packageId, enabled])
+  }, [
+    mailObjectId,
+    mailBlobId,
+    sessionKey,
+    suiClient,
+    packageId,
+    enabled,
+    decryptedContent,
+  ])
 
   useEffect(() => {
     hasDecryptedRef.current = false

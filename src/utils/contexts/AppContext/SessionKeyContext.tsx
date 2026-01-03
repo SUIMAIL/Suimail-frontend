@@ -76,17 +76,14 @@ export function SessionKeyProvider({
             setIsCreating(false)
           },
           onError: (err: any) => {
-            console.error(
-              '❌ [SessionKey] Failed to sign personal message:',
-              err
-            )
+            console.error(' [SessionKey] Failed to sign personal message:', err)
             setError(err?.message || 'Failed to sign session key')
             setIsCreating(false)
           },
         }
       )
     } catch (err: any) {
-      console.error('❌ [SessionKey] Error creating session key:', err)
+      console.error(' [SessionKey] Error creating session key:', err)
       setError(err?.message || 'Failed to create session key')
       setIsCreating(false)
     }

@@ -38,7 +38,8 @@ export function useSessionKey(PACKAGE_ID: string) {
       try {
         const sk = await SessionKey.create({
           address: currentAccount.address,
-          PACKAGE_ID,
+          packageId: PACKAGE_ID,
+
           ttlMin: TTL_MIN,
           suiClient,
         })
@@ -54,7 +55,7 @@ export function useSessionKey(PACKAGE_ID: string) {
             },
             onError: (err: any) => {
               console.error(
-                '❌ [useSessionKey] Failed to sign personal message:',
+                '[useSessionKey] Failed to sign personal message:',
                 err
               )
               setError(err?.message || 'Failed to sign session key')
@@ -63,7 +64,7 @@ export function useSessionKey(PACKAGE_ID: string) {
           }
         )
       } catch (err: any) {
-        console.error('❌ [useSessionKey] Error creating session key:', err)
+        console.error(' [useSessionKey] Error creating session key:', err)
         setError(err?.message || 'Failed to create session key')
       } finally {
         setLoading(false)
