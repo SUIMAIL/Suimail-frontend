@@ -13,7 +13,6 @@
     "url": "git+https://github.com/SUIMAIL/Suimail-frontend.git"
   },
   "scripts": {
-    "preinstall": "npx npm-force-resolutions",
     "dev": "vite",
     "build": "tsc -b && vite build",
     "lint": "eslint .",
