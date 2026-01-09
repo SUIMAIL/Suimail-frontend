@@ -1,7 +1,11 @@
 import { useCallback, useEffect, useState } from 'react'
 import { useNavigate } from 'react-router-dom'
 import type { WalletAccount } from '@wallet-standard/base'
-import { ConnectModal, useCurrentAccount } from '@mysten/dapp-kit'
+import {
+  ConnectModal,
+  useCurrentAccount,
+  useSignPersonalMessage,
+} from '@mysten/dapp-kit'
 import { setCookie } from '@/utils/helpers/auth'
 import { useLoginMutation } from '../../hooks/auth'
 import { ACCESS_TOKEN_COOKIE_NAME } from '@/constants'
@@ -10,6 +14,7 @@ import mixpanel from '@/utils/mixpanel'
 export default function LandingPage() {
   const navigate = useNavigate()
   const currentAccount = useCurrentAccount()
+  const { mutateAsync: signMessage } = useSignPersonalMessage()
   const [isModalOpen, setIsModalOpen] = useState(false)
   const [currentAccountIsSet, setCurrentAccountIsSet] = useState(false)
   const { mutateAsync: login, isPending: isLoginPending } = useLoginMutation()
@@ -17,7 +22,23 @@ export default function LandingPage() {
   const handleLogin = useCallback(
     async (wallet: WalletAccount) => {
       try {
-        const response = await login(wallet.address)
+        // Step 1: Sign the message "hello, World!" to match backend
+        const message = 'hello, World!'
+        const messageBytes = new TextEncoder().encode(message)
+
+        console.log('Requesting signature from wallet...')
+        const { signature } = await signMessage({
+          message: messageBytes,
+        })
+
+        console.log('Signature received, authenticating...')
+
+        // Step 2: Send address and signature to backend
+        const response = await login({
+          address: wallet.address,
+          signature: signature,
+        })
+
         if (response.access_token) {
           mixpanel.track('Login Success', {
             wallet_address: wallet.address,
@@ -25,14 +46,18 @@ export default function LandingPage() {
           setCookie(ACCESS_TOKEN_COOKIE_NAME, response.access_token)
           navigate('/mail/inbox')
         }
-      } catch {
+      } catch (error) {
+        console.error('Login error:', error)
         mixpanel.track('Login Failed', {
           wallet_address: wallet.address,
-          error_message: 'Login failed',
+          error_message:
+            error instanceof Error ? error.message : 'Login failed',
         })
+        // Optionally show error to user
+        // You might want to add a toast notification here
       }
     },
-    [login, navigate]
+    [login, navigate, signMessage]
   )
 
   useEffect(() => {

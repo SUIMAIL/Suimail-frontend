@@ -104,7 +104,7 @@ export default function OnboardingPage() {
       ? suimailNs
       : suimailNs + '@suimailapp'
     if (!walletAddress || !isValidSuiAddress(walletAddress)) {
-      console.error('❌ Invalid wallet address:', walletAddress)
+      console.error(' Invalid wallet address:', walletAddress)
       setNotification({ message: 'Invalid wallet address', type: 'error' })
       return
     }
@@ -135,7 +135,7 @@ export default function OnboardingPage() {
         error instanceof Error ? error.message : 'Unknown error'
       const axiosError = error instanceof AxiosError ? error : null
 
-      console.error('📊 Error details:', {
+      console.error(' Error details:', {
         message: errorMessage,
         response: axiosError?.response,
         status: axiosError?.response?.status,

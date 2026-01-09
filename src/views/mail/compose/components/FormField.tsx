@@ -44,7 +44,7 @@ export const FormField = ({
   rows,
   extendAction,
   onBlur,
-  onChange, // ✅ Add this
+  onChange,
   useRichEditor = false,
   disabled,
   readonly,
