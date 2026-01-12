@@ -7,7 +7,7 @@ import {
   useSignPersonalMessage,
 } from '@mysten/dapp-kit'
 import { setCookie } from '@/utils/helpers/auth'
-import { useLoginMutation } from '../../hooks/auth'
+import { useLoginMutation, useGetChallengeMutation } from '../../hooks/auth'
 import { ACCESS_TOKEN_COOKIE_NAME } from '@/constants'
 import mixpanel from '@/utils/mixpanel'
 
@@ -17,29 +17,45 @@ export default function LandingPage() {
   const { mutateAsync: signMessage } = useSignPersonalMessage()
   const [isModalOpen, setIsModalOpen] = useState(false)
   const [currentAccountIsSet, setCurrentAccountIsSet] = useState(false)
+
+  // Two separate mutations for the two-step flow
+  const { mutateAsync: getChallenge, isPending: isChallengePending } =
+    useGetChallengeMutation()
   const { mutateAsync: login, isPending: isLoginPending } = useLoginMutation()
+
+  // Combined loading state
+  const isLoading = isChallengePending || isLoginPending
 
   const handleLogin = useCallback(
     async (wallet: WalletAccount) => {
       try {
-        // Step 1: Sign the message "hello, World!" to match backend
-        const message = 'hello, World!'
+        // STEP 1: Request challenge from backend
+        console.log('Step 1: Requesting challenge from backend...')
+        const { message, nonce } = await getChallenge(wallet.address)
+
+        console.log('Challenge received with nonce:', nonce)
+        console.log('Message to sign:', message)
+
+        // STEP 2: Ask user to sign the challenge message
+        console.log('Step 2: Requesting signature from wallet...')
         const messageBytes = new TextEncoder().encode(message)
 
-        console.log('Requesting signature from wallet...')
         const { signature } = await signMessage({
           message: messageBytes,
         })
 
-        console.log('Signature received, authenticating...')
+        console.log('Signature received from wallet')
 
-        // Step 2: Send address and signature to backend
+        // STEP 3: Send signature + nonce to backend for verification
+        console.log('Step 3: Verifying signature with backend...')
         const response = await login({
           address: wallet.address,
           signature: signature,
+          nonce: nonce,
         })
 
         if (response.access_token) {
+          console.log('Login successful! Redirecting to inbox...')
           mixpanel.track('Login Success', {
             wallet_address: wallet.address,
           })
@@ -53,11 +69,10 @@ export default function LandingPage() {
           error_message:
             error instanceof Error ? error.message : 'Login failed',
         })
-        // Optionally show error to user
-        // You might want to add a toast notification here
+        // TODO: Add toast notification to show error to user
       }
     },
-    [login, navigate, signMessage]
+    [getChallenge, login, navigate, signMessage]
   )
 
   useEffect(() => {
@@ -95,22 +110,22 @@ export default function LandingPage() {
           <ConnectModal
             trigger={
               <button
-                disabled={!!currentAccount || isLoginPending}
+                disabled={!!currentAccount || isLoading}
                 className={`
                   w-full touch-target rounded-lg
                   flex items-center justify-center gap-3
                   text-base sm:text-lg font-medium
                   transition-all duration-200
                   ${
-                    currentAccount || isLoginPending
+                    currentAccount || isLoading
                       ? 'bg-muted text-muted-foreground cursor-not-allowed'
                       : 'bg-blue-base text-white hover:bg-blue-dark hover:shadow-hover active:scale-[0.98]'
                   }
                 `}
               >
-                {isLoginPending && <LoginCircle />}
+                {isLoading && <LoginCircle />}
                 <span className="py-1">
-                  {renderConnectButtonLabel(currentAccount, isLoginPending)}
+                  {renderConnectButtonLabel(currentAccount, isLoading)}
                 </span>
               </button>
             }
@@ -140,7 +155,7 @@ const renderConnectButtonLabel = (
   isPending: boolean
 ) => {
   if (!wallet) return 'Connect Wallet'
-  if (isPending) return 'Connecting...'
+  if (isPending) return 'Authenticating...'
   return `${wallet.address.slice(0, 4)}...${wallet.address.slice(-4)}`
 }
 

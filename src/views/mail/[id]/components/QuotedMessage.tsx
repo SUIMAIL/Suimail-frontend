@@ -16,14 +16,12 @@ import {
 } from '@/components/ui/tooltip'
 import { useGetUserProfileImageQuery } from '@/hooks/user'
 import { useSuiClient } from '@mysten/dapp-kit'
-import { useSessionKey } from '@/hooks/mail/use-session-key'
+import { useSessionKeyContext } from '@/utils/contexts/AppContext/SessionKeyContext'
 import { decryptMailContent } from '@/utils/decrypt-mail'
 import type { IEmail } from '@/types/generic'
 import type { DecryptedContent } from '../types'
 import { EmailBodyFormatter } from '../email-format'
 import RenderAttachments from './RenderAttachments'
-import { SessionKey } from '@mysten/seal'
-import type { SuiClient } from '@mysten/sui/client'
 
 const PACKAGE_ID = import.meta.env.VITE_PACKAGE_ID
 
@@ -31,9 +29,6 @@ interface QuotedMessageProps {
   email: IEmail
   isExpanded: boolean
   onToggle: () => void
-  sessionKey: SessionKey | null
-  suiClient: SuiClient
-  packageId: string
 }
 
 export function QuotedMessage({
@@ -42,7 +37,7 @@ export function QuotedMessage({
   onToggle,
 }: QuotedMessageProps) {
   const suiClient = useSuiClient()
-  const { sessionKey } = useSessionKey(PACKAGE_ID)
+  const { sessionKey } = useSessionKeyContext()
   const { data: profileImageData, isPending: isLoadingProfileImage } =
     useGetUserProfileImageQuery()
   const profileImage = profileImageData?.imageUrl

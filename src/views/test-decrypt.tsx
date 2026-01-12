@@ -3,9 +3,8 @@
 import { useState } from 'react'
 import { Button } from '@/components/ui/button'
 import { decryptMailContent } from '@/utils/decrypt-mail'
-import { useCurrentAccount } from '@mysten/dapp-kit'
-import { useSessionKey } from '@/hooks/mail/use-session-key'
-import { useSuiClient } from '@mysten/dapp-kit'
+import { useCurrentAccount, useSuiClient } from '@mysten/dapp-kit'
+import { useSessionKeyContext } from '@/utils/contexts/AppContext/SessionKeyContext'
 
 const PACKAGE_ID = import.meta.env.VITE_PACKAGE_ID
 
@@ -17,9 +16,9 @@ export default function TestDecrypt() {
   const currentAccount = useCurrentAccount()
   const {
     sessionKey,
-    loading: sessionKeyLoading,
+    isCreating,
     error: sessionKeyError,
-  } = useSessionKey(PACKAGE_ID)
+  } = useSessionKeyContext()
   const suiClient = useSuiClient()
 
   // =======================
@@ -116,13 +115,13 @@ export default function TestDecrypt() {
           {sessionKeyError && (
             <p className="text-red-600 text-sm">❌ Error: {sessionKeyError}</p>
           )}
-          {sessionKeyLoading && (
+          {isCreating && (
             <p className="text-blue-600 text-sm">🔄 Creating session key...</p>
           )}
-          {sessionKey && !sessionKeyLoading && (
+          {sessionKey && !isCreating && (
             <p className="text-green-600 text-sm">✅ Session key ready</p>
           )}
-          {!sessionKey && !sessionKeyLoading && !sessionKeyError && (
+          {!sessionKey && !isCreating && !sessionKeyError && (
             <p className="text-yellow-600 text-sm">
               ⏳ Waiting to create session key...
             </p>
@@ -133,7 +132,7 @@ export default function TestDecrypt() {
         <div className="space-y-4 mb-6">
           <Button
             onClick={handleTestDecrypt}
-            disabled={isLoading || !sessionKey || sessionKeyLoading}
+            disabled={isLoading || !sessionKey || isCreating}
             className="w-full"
             size="lg"
             variant="secondary"
